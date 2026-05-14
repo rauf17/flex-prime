@@ -1,0 +1,35 @@
+{
+  "name": "Flex Prime",
+  "manifest_version": 3,
+  "version": "2.0",
+  "version_name": "",
+  "description": "NU FlexStudent toolkit — GPA calculator, marks fix, attendance tracker & more.",
+  "permissions": ["scripting", "tabs", "storage"],
+  "host_permissions": ["*://flexstudent.nu.edu.pk/*"],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://flexstudent.nu.edu.pk/*"],
+      "js": ["content.js"],
+      "run_at": "document_start"
+    }
+  ],
+  "icons": {
+    "128": "favicon.png"
+  },
+  "commands": {
+    "fix-marks": {
+      "suggested_key": { "default": "Ctrl+Shift+F" },
+      "description": "Fix Grand Total Marks"
+    },
+    "toggle-gpa": {
+      "suggested_key": { "default": "Ctrl+Shift+S" },
+      "description": "Toggle GPA Calculator"
+    }
+  }
+}
