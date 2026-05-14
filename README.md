@@ -46,6 +46,18 @@ Once Flex Prime is installed and enabled, it will automatically activate when yo
     *   Feedback automation will become active on the course feedback submission pages.
 2.  **Using the Popup**: 💬 Click the Flex Prime extension icon in your browser's toolbar to open the popup interface, where you might find quick settings, theme selection options, or toggles for specific features.
 
+--
+
+## Themes
+
+<img width="1734" height="542" alt="image" src="https://github.com/user-attachments/assets/b2b1bc65-b7e5-4913-b084-6201ed1422ef" />
+
+<img width="1717" height="539" alt="image" src="https://github.com/user-attachments/assets/60f9ee51-243f-4552-b911-d589ff697b5a" />
+
+<img width="1718" height="543" alt="image" src="https://github.com/user-attachments/assets/b606e8a2-1fc5-45a4-b752-53166d889bd6" />
+
+--
+
 ## 🤝 Contributing
 
 We welcome contributions from the community to make Flex Prime even better! Whether you're reporting a bug, suggesting a new feature, or submitting code, your input is invaluable. 🙏
