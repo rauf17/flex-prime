@@ -2,7 +2,9 @@
 
 Flex Prime is an indispensable browser extension meticulously designed to enhance the user experience of the FAST University Learning Management System (LMS) portal, "Flex". This powerful tool introduces a suite of features aimed at streamlining common tasks and providing valuable utilities to students, transforming your interaction with the portal.
 
-<img width="397" height="747" alt="image" src="https://github.com/user-attachments/assets/dfd3f975-5184-41a4-b865-0af82f073433" />
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/dfd3f975-5184-41a4-b865-0af82f073433" width="397" height="747" />
+</p>
 
 
 ## 📝 Description
