@@ -612,8 +612,8 @@ const themeRadios = document.querySelectorAll('input[name="theme-radio"]');
 
 // Load saved theme on popup open
 chrome.storage.local.get(['jf_theme'], (res) => {
-  const activeTheme = res.jf_theme || 'light';
-  const radio = document.getElementById(`theme-${activeTheme}`);
+  const activeTheme = res.jf_theme || 'dark';
+  const radio = document.getElementById(`t-${activeTheme}`);
   if (radio) radio.checked = true;
 });
 
