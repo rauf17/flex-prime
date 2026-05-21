@@ -2,15 +2,63 @@
 chrome.commands.onCommand.addListener((command) => {
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
     const tab = tabs[0];
-    if (tab?.url?.includes('flexstudent.nu.edu.pk')) {
-      if (command === "fix-marks") {
+    if (!tab?.url?.includes('flexstudent.nu.edu.pk')) return;
+
+    if (command === 'fix-marks') {
+      if (tab.url.includes('StudentMarks')) {
         chrome.scripting.executeScript({ target: { tabId: tab.id }, function: marksMainFunction });
-      } else if (command === "toggle-gpa") {
+      } else {
+        // Navigate via sidebar click to keep session alive, then auto-inject once loaded
+        chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          func: () => {
+            const link =
+              document.querySelector('a[href*="StudentMarks"]') ||
+              document.querySelector('a[href="/Student/StudentMarks"]');
+            if (link) { link.click(); } else { window.location.href = '/Student/StudentMarks'; }
+          }
+        });
+        injectOnceLoaded(tab.id, 'StudentMarks', marksMainFunction);
+      }
+    } else if (command === 'toggle-gpa') {
+      if (tab.url.includes('Transcript')) {
         chrome.scripting.executeScript({ target: { tabId: tab.id }, function: calculatorMainFunction });
+      } else {
+        // Navigate via sidebar click to keep session alive, then auto-inject once loaded
+        chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          func: () => {
+            const link =
+              document.querySelector('a[href*="Transcript"]') ||
+              document.querySelector('a[href="/Student/Transcript"]');
+            if (link) { link.click(); } else { window.location.href = '/Student/Transcript'; }
+          }
+        });
+        injectOnceLoaded(tab.id, 'Transcript', calculatorMainFunction);
       }
     }
   });
 });
+
+// ── Wait for the target page to finish loading, then inject the feature ──────
+function injectOnceLoaded(tabId, urlFragment, fn) {
+  const listener = (updatedTabId, changeInfo, updatedTab) => {
+    if (updatedTabId !== tabId) return;
+    if (changeInfo.status !== 'complete') return;
+    if (!updatedTab.url?.includes(urlFragment)) return;
+
+    chrome.tabs.onUpdated.removeListener(listener);
+
+    // Give the page's own JS (AJAX data load) a moment to settle before injecting
+    setTimeout(() => {
+      chrome.scripting.executeScript({ target: { tabId }, function: fn });
+    }, 800);
+  };
+  chrome.tabs.onUpdated.addListener(listener);
+
+  // Safety: remove listener after 15s in case navigation never completes
+  setTimeout(() => chrome.tabs.onUpdated.removeListener(listener), 15000);
+}
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // ── INJECTED FUNCTIONS ────────────────────────────────────────────────────────
@@ -69,6 +117,15 @@ function marksMainFunction() {
       document.getElementById('GrandtotalClassAvg_' + id).textContent = totalAverage.toFixed(2);
       document.getElementById('GrandtotalClassMin_' + id).textContent = totalMin.toFixed(2);
       document.getElementById('GrandtotalClassMax_' + id).textContent = totalMax.toFixed(2);
+
+      // ── Auto-expand the Grand Total accordion panel ──
+      // Only click if it's currently collapsed (avoid toggling it closed)
+      const grandTotalDiv = course.querySelector(`div[id="${course.id}-Grand_Total_Marks"]`);
+      const isCollapsed = grandTotalDiv && !grandTotalDiv.classList.contains('in');
+      if (isCollapsed) {
+        // Let Bootstrap's own handler do the expand — direct class manipulation doesn't work
+        btn.click();
+      }
     }
   });
 }
