@@ -3,7 +3,7 @@
 Flex Prime is a browser extension built to make the FAST University FlexStudent portal actually pleasant to use. It fixes broken features, adds missing ones, and gives the whole interface a modern coat of paint — all without touching your login session.
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/dfd3f975-5184-41a4-b865-0af82f073433" width="397" height="747" />
+  <img width="397" height="686" alt="image" src="https://github.com/user-attachments/assets/fa13dd1e-862c-4db9-927f-eae544a0da44" />
 </p>
 
 ---
