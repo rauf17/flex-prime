@@ -3,7 +3,6 @@ const btnMarks      = document.getElementById('btn-marks');
 const btnGpa        = document.getElementById('btn-gpa');
 const btnFeedback   = document.getElementById('btn-feedback');
 const btnPdf        = document.getElementById('btn-pdf');
-const btnAdmit      = document.getElementById('btn-admit');
 const toast         = document.getElementById('toast');
 const toastSvg      = document.getElementById('toast-svg');
 const toastMsg      = document.getElementById('toast-msg');
@@ -46,13 +45,35 @@ function injectFunction(func, args = []) {
 
 // ── Button handlers ──────────────────────────────────────────────────────────
 btnMarks.addEventListener('click', () => {
-  injectFunction(marksMainFunction);
-  showToast('Grand total marks fixed!');
+  getActiveTab((tab) => {
+    if (!isFlexHost(tab)) return showToast('Open FlexStudent first', 'error');
+    const marksUrl = 'https://flexstudent.nu.edu.pk/Student/StudentMarks';
+    if (tab.url.includes('StudentMarks')) {
+      // Already on marks page — inject directly
+      chrome.scripting.executeScript({ target: { tabId: tab.id }, function: marksMainFunction });
+      showToast('Grand total fixed!');
+    } else {
+      // Navigate first, inject once loaded
+      chrome.tabs.update(tab.id, { url: marksUrl });
+      showToast('Opening Marks page...');
+    }
+  });
 });
 
 btnGpa.addEventListener('click', () => {
-  injectFunction(calculatorMainFunction);
-  showToast('GPA Calculator activated!');
+  getActiveTab((tab) => {
+    if (!isFlexHost(tab)) return showToast('Open FlexStudent first', 'error');
+    const transcriptUrl = 'https://flexstudent.nu.edu.pk/Student/Transcript';
+    if (tab.url.includes('Transcript')) {
+      // Already on transcript page — inject directly
+      chrome.scripting.executeScript({ target: { tabId: tab.id }, function: calculatorMainFunction });
+      showToast('GPA Calculator activated!');
+    } else {
+      // Navigate first, inject once loaded
+      chrome.tabs.update(tab.id, { url: transcriptUrl });
+      showToast('Opening Transcript page...');
+    }
+  });
 });
 
 btnFeedback.addEventListener('click', () => {
@@ -71,38 +92,6 @@ btnPdf.addEventListener('click', () => {
       function: transcriptPdfFunction
     });
     showToast('Generating PDF...');
-  });
-});
-
-btnAdmit.addEventListener('click', () => {
-  getActiveTab((tab) => {
-    if (!isFlexHost(tab)) return showToast('Open FlexStudent first', 'error');
-
-    const inject = (tabId) => {
-      // MAIN world: lets us patch XHR/fetch in the actual page context
-      chrome.scripting.executeScript({
-        target: { tabId, allFrames: false },
-        func: admitCardFunction,
-        world: 'MAIN'
-      });
-    };
-
-    if (tab.url.includes('PrintAdmitCard')) {
-      inject(tab.id);
-      showToast('Bypassing lock...');
-    } else {
-      chrome.tabs.update(tab.id, { url: 'https://flexstudent.nu.edu.pk/Student/PrintAdmitCard' }, () => {
-        const listener = (tabId, info) => {
-          if (tabId === tab.id && info.status === 'complete') {
-            chrome.tabs.onUpdated.removeListener(listener);
-            // Inject early (600ms) so network patches fire before page JS runs
-            setTimeout(() => inject(tab.id), 600);
-          }
-        };
-        chrome.tabs.onUpdated.addListener(listener);
-      });
-      showToast('Opening admit card page...');
-    }
   });
 });
 
@@ -370,234 +359,6 @@ function feedbackMainFunction(input) {
     if (spans[idx]) spans[idx].querySelector('input').checked = true;
   });
 }
-function admitCardFunction() {
-
-  // ══════════════════════════════════════════════════════════════
-  // LAYER 1 — Patch XHR & fetch BEFORE any page JS fires
-  // Intercepts the feedback-status check and spoof it as complete
-  // ══════════════════════════════════════════════════════════════
-  (function patchNetwork() {
-    // --- Patch XMLHttpRequest ---
-    const _open  = XMLHttpRequest.prototype.open;
-    const _send  = XMLHttpRequest.prototype.send;
-
-    XMLHttpRequest.prototype.open = function(method, url, ...rest) {
-      this.__url = url;
-      return _open.call(this, method, url, ...rest);
-    };
-
-    XMLHttpRequest.prototype.send = function(body) {
-      const url = this.__url || '';
-      // Intercept any feedback/lock-status/admit card eligibility check
-      const isLockCheck = /feedback|FeedBack|eligible|lock|AdmitCard|PrintAdmit/i.test(url);
-      if (isLockCheck) {
-        // Fake a completed-feedback / eligible response
-        Object.defineProperty(this, 'readyState', { get: () => 4, configurable: true });
-        Object.defineProperty(this, 'status',    { get: () => 200, configurable: true });
-        Object.defineProperty(this, 'responseText', {
-          get: () => JSON.stringify({ success: true, isEligible: true, feedbackSubmitted: true, status: 'OK', data: true }),
-          configurable: true
-        });
-        setTimeout(() => {
-          if (typeof this.onreadystatechange === 'function') this.onreadystatechange();
-          if (typeof this.onload === 'function') this.onload();
-        }, 10);
-        return;
-      }
-      return _send.call(this, body);
-    };
-
-    // --- Patch fetch ---
-    const _fetch = window.fetch;
-    window.fetch = function(input, init) {
-      const url = typeof input === 'string' ? input : (input?.url || '');
-      const isLockCheck = /feedback|FeedBack|eligible|lock|AdmitCard|PrintAdmit/i.test(url);
-      if (isLockCheck) {
-        const fakeBody = JSON.stringify({ success: true, isEligible: true, feedbackSubmitted: true, status: 'OK', data: true });
-        return Promise.resolve(new Response(fakeBody, {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' }
-        }));
-      }
-      return _fetch.call(window, input, init);
-    };
-  })();
-
-  // ══════════════════════════════════════════════════════════════
-  // LAYER 2 — Neutralise JS gate variables & functions in-page
-  // FlexStudent typically uses a global bool or a function call
-  // to conditionally show the card. We nuke them all.
-  // ══════════════════════════════════════════════════════════════
-  (function patchPageGlobals() {
-    // Common variable names used by the portal
-    const gateVars = [
-      'isFeedbackSubmitted', 'feedbackSubmitted', 'isEligible',
-      'admitCardLocked', 'isLocked', 'lockAdmitCard',
-      'feedbackPending', 'canPrintAdmitCard', 'printAllowed'
-    ];
-    gateVars.forEach(v => {
-      try {
-        // Override with a getter that always returns the "unlocked" value
-        const currentVal = window[v];
-        const unlockedVal = (typeof currentVal === 'boolean') ? true : (currentVal === 0 ? 1 : true);
-        Object.defineProperty(window, v, {
-          get: () => unlockedVal,
-          set: () => {},      // block re-locking
-          configurable: true
-        });
-      } catch(e) {}
-    });
-
-    // Patch common gate functions that return eligibility
-    const gateFns = [
-      'checkFeedback', 'isFeedbackDone', 'checkEligibility',
-      'validateFeedback', 'isAdmitCardAllowed', 'checkAdmitCard'
-    ];
-    gateFns.forEach(fn => {
-      if (typeof window[fn] === 'function') {
-        window[fn] = () => true;
-      }
-    });
-  })();
-
-  // ══════════════════════════════════════════════════════════════
-  // LAYER 3 — DOM surgery: remove overlays, unlock elements,
-  // strip inline CSS locks, reveal hidden content
-  // ══════════════════════════════════════════════════════════════
-  (function unlockDOM() {
-    // Remove overlay / lock elements
-    const lockSelectors = [
-      '.locked-overlay', '.lock-overlay', '.feedback-required',
-      '.feedback-lock', '.admit-lock', '[class*="lock-"]',
-      '[class*="-lock"]', '[id*="lock"]', '[id*="feedback-wall"]',
-      '.modal-backdrop', '.disabled-overlay', '[class*="disabled-overlay"]',
-      '.feedback-modal:not(.fade)'
-    ];
-    lockSelectors.forEach(sel => {
-      document.querySelectorAll(sel).forEach(el => el.remove());
-    });
-
-    // Restore body scroll (modals often lock it)
-    document.body.style.overflow   = '';
-    document.body.style.paddingRight = '';
-    document.body.classList.remove('modal-open');
-
-    // Enable every disabled button / input on the page
-    document.querySelectorAll('button[disabled], input[disabled], a.disabled, .btn.disabled').forEach(el => {
-      el.disabled = false;
-      el.removeAttribute('disabled');
-      el.classList.remove('disabled');
-      el.style.pointerEvents = 'auto';
-      el.style.opacity = '1';
-      el.style.cursor  = 'pointer';
-    });
-
-    // Unhide elements hidden via inline style or common classes
-    document.querySelectorAll('[style*="display:none"], [style*="display: none"], .hidden, .d-none').forEach(el => {
-      // Only reveal elements that look like admit-card content
-      const txt = (el.id + el.className + (el.innerText || '')).toLowerCase();
-      if (/(admit|card|print|exam|hall.?ticket|seat|roll)/i.test(txt)) {
-        el.style.display = '';
-        el.style.visibility = 'visible';
-        el.classList.remove('hidden', 'd-none');
-      }
-    });
-
-    // Strip pointer-events:none from the main content wrapper
-    ['.m-content', '.m-portlet__body', '#admit-card', '#admitCard', '#printArea'].forEach(sel => {
-      document.querySelectorAll(sel).forEach(el => {
-        el.style.pointerEvents = '';
-        el.style.opacity = '1';
-        el.style.filter = '';
-      });
-    });
-  })();
-
-  // ══════════════════════════════════════════════════════════════
-  // LAYER 4 — Inject a universal "unlock" CSS override
-  // Reverses any stylesheet rules that hide/dim the card
-  // ══════════════════════════════════════════════════════════════
-  (function injectUnlockCSS() {
-    if (document.getElementById('fp-admit-unlock')) return;
-    const s = document.createElement('style');
-    s.id = 'fp-admit-unlock';
-    s.textContent = `
-      /* Flex Prime — Admit Card Force-Unlock */
-      .locked-overlay, .lock-overlay, .feedback-required,
-      .feedback-lock, [class*="lock-overlay"], [id*="feedbackWall"] {
-        display: none !important;
-      }
-      body { overflow: auto !important; padding-right: 0 !important; }
-      .modal-backdrop { display: none !important; }
-      .modal-open { overflow: auto !important; }
-
-      /* Force-show admit card content */
-      #admit-card, #admitCard, #printArea, .admit-card,
-      [id*="admit"], [class*="admit-card"] {
-        display: block !important;
-        visibility: visible !important;
-        opacity: 1 !important;
-        pointer-events: auto !important;
-        filter: none !important;
-      }
-      /* Unlock all buttons */
-      button[disabled], .btn.disabled, a.disabled {
-        pointer-events: auto !important;
-        opacity: 1 !important;
-        cursor: pointer !important;
-      }
-
-      @media print {
-        .m-aside-left, .m-header, .m-subheader, .m-footer,
-        .m-topbar, #jf-status-badge, #jf-scroll-top,
-        .no-print, nav, .navbar { display: none !important; }
-        .m-content, .m-portlet, body, html { background: white !important; }
-        .m-portlet { box-shadow: none !important; border: 1px solid #ccc !important; }
-      }
-    `;
-    document.head.appendChild(s);
-  })();
-
-  // ══════════════════════════════════════════════════════════════
-  // LAYER 5 — Re-trigger the page's own render logic & print
-  // ══════════════════════════════════════════════════════════════
-  setTimeout(() => {
-    // Try calling the page's own admit card loader if it exists
-    const loaderFns = ['loadAdmitCard', 'renderAdmitCard', 'showAdmitCard',
-                       'generateAdmitCard', 'PrintAdmitCard', 'printAdmitCard',
-                       'getAdmitCard', 'fetchAdmitCard'];
-    let calledLoader = false;
-    loaderFns.forEach(fn => {
-      if (typeof window[fn] === 'function' && !calledLoader) {
-        try { window[fn](); calledLoader = true; } catch(e) {}
-      }
-    });
-
-    // Re-run DOM unlock after any async re-render
-    setTimeout(() => {
-      // Remove overlays again (page may have re-added them)
-      document.querySelectorAll(
-        '.locked-overlay,.lock-overlay,.feedback-required,.feedback-lock,.modal-backdrop'
-      ).forEach(el => el.remove());
-      document.body.classList.remove('modal-open');
-      document.body.style.overflow = '';
-
-      // Find the print button and click it
-      const printBtn = Array.from(document.querySelectorAll('button, .btn, input[type="button"], a[onclick*="print"]'))
-        .find(b => /(print|download|admit)/i.test(b.textContent + b.value + b.getAttribute('onclick')));
-
-      if (printBtn) {
-        printBtn.disabled = false;
-        printBtn.removeAttribute('disabled');
-        printBtn.click();
-      } else {
-        // No print button found — trigger window.print directly
-        window.print();
-      }
-    }, 600);
-  }, 300);
-}
-
 function transcriptPdfFunction() {
   // ── 1. DATA SCRAPER ──
   const pageText = document.body.innerText;
