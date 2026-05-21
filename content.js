@@ -8,7 +8,7 @@
   chrome.storage.local.get(['jf_theme', 'dark_mode_global'], (res) => {
     if (!isAuthPage) {
       injectFonts();
-      const theme = res.jf_theme || (res.dark_mode_global ? 'dark' : 'light');
+      const theme = res.jf_theme || (res.dark_mode_global ? 'dark' : 'dark');
       applyFlexTheme(theme);
       injectScrollTopBtn();
       injectSidebarBadges();
@@ -37,8 +37,8 @@
 
   function applyFlexTheme(theme) {
     // Normalize: accept boolean for backward compat
-    if (typeof theme === 'boolean') theme = theme ? 'dark' : 'light';
-    if (!theme) theme = 'light';
+    if (typeof theme === 'boolean') theme = theme ? 'dark' : 'dark';
+    if (!theme) theme = 'dark';
 
     const id = 'jf-theme';
     const existing = document.getElementById(id);
@@ -350,6 +350,32 @@
         color: ${c.accent} !important;
         border-bottom: 2px solid ${c.accent} !important;
         background: transparent !important;
+        font-weight: 700 !important;
+      }
+
+      /* ── TABS INSIDE PORTLET HEAD (dark bg always) ── */
+      .m-portlet__head .nav-tabs,
+      .m-portlet__head .m-tabs-line {
+        border-bottom-color: rgba(255,255,255,0.2) !important;
+      }
+      .m-portlet__head .nav-tabs .nav-link,
+      .m-portlet__head .m-tabs-line .nav-link {
+        color: rgba(255,255,255,0.7) !important;
+        border-bottom-color: transparent !important;
+      }
+      .m-portlet__head .nav-tabs .nav-link:hover,
+      .m-portlet__head .m-tabs-line .nav-link:hover {
+        color: #ffffff !important;
+        border-bottom-color: rgba(255,255,255,0.4) !important;
+        background: rgba(255,255,255,0.08) !important;
+        border-radius: 6px 6px 0 0 !important;
+      }
+      .m-portlet__head .nav-tabs .nav-link.active,
+      .m-portlet__head .m-tabs-line .nav-link.active {
+        color: #ffffff !important;
+        border-bottom: 2px solid #ffffff !important;
+        background: rgba(255,255,255,0.12) !important;
+        border-radius: 6px 6px 0 0 !important;
         font-weight: 700 !important;
       }
 
