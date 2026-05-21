@@ -1,74 +1,130 @@
 # ✨ Flex Prime: Supercharge Your FAST University LMS Experience ✨
 
-Flex Prime is an indispensable browser extension meticulously designed to enhance the user experience of the FAST University Learning Management System (LMS) portal, "Flex". This powerful tool introduces a suite of features aimed at streamlining common tasks and providing valuable utilities to students, transforming your interaction with the portal.
+Flex Prime is a browser extension built to make the FAST University FlexStudent portal actually pleasant to use. It fixes broken features, adds missing ones, and gives the whole interface a modern coat of paint — all without touching your login session.
 
 <p align="center">
   <img src="https://github.com/user-attachments/assets/dfd3f975-5184-41a4-b865-0af82f073433" width="397" height="747" />
 </p>
 
+---
 
-## 📝 Description
+## 📝 Features
 
-Flex Prime elevates the standard Flex portal experience with a range of innovative functionalities:
+### 01 — Grand Total Marks Fix
+The marks page normally makes you click a "Calculate" button for every single course. Flex Prime eliminates this entirely — it automatically computes and fills in the Grand Total row for every course at once, including Total Marks, Obtained Marks, Class Average, Minimum, and Maximum. The Grand Total accordion also expands automatically so results are immediately visible.
 
-*   **Fix Grand Total Marks**: ➕ Correctly display and calculate grand total marks on relevant academic record pages, ensuring accuracy at a glance.
-*   **Calculate CGPA**: 🎓 Effortlessly compute your Cumulative Grade Point Average (CGPA) directly within the portal, providing instant academic insights.
-*   **Export Transcript**: 📄 Generate and export your academic transcript with ease, simplifying the process of obtaining official records.
-*   **Print Admit Card**: 🖨️ Streamline the process of printing your admit card for examinations, ensuring you're always prepared.
-*   **Theme Engine**: 🎨 Personalize your Flex portal experience by applying custom themes and overwriting default UI styles to suit your aesthetic preferences.
-*   **Fill Feedback**: ✍️ Automate and streamline the process of submitting course feedback, saving time and encouraging participation.
+- Calculates totals for all courses simultaneously
+- Shows Total Marks, Obtained, Class Avg, Min & Max
+- Grand Total panel auto-expands — no manual clicking
+- Shortcut: `Ctrl + Shift + F`
+
+---
+
+### 02 — What-If GPA Calculator
+Wondering how your grade choices will affect your GPA? The calculator injects interactive dropdowns directly into the Transcript page for your current semester. Change any grade and your SGPA and CGPA update instantly. Handles course repeats correctly by always using the latest grade per subject.
+
+- Live SGPA and CGPA recalculation as you change grades
+- Handles repeat courses — uses latest grade per subject
+- Colour-coded chips: green (3.5+), blue (3.0+), amber (2.5+), red (<2.5)
+- Shortcut: `Ctrl + Shift + S`
+
+---
+
+### 03 — Attendance Tracker
+The default attendance page only shows a vague progress bar. Flex Prime overlays a clear summary badge on every course tab with the exact numbers you need. A warning fires automatically when your attendance drops below the critical 80% threshold.
+
+- Absents, Presents, and Total class count per course
+- Precise attendance percentage calculated per course
+- Red warning badge when below 80% — never miss the cutoff
+- Updates automatically when switching between course tabs
+
+---
+
+### 04 — Marks Change Highlighter
+Tired of checking every course tab manually to see if new marks were uploaded? Flex Prime silently snapshots your marks on every visit. The next time anything changes, the affected course tab glows with a pulsing teal highlight and an "UPDATED" badge. A banner at the top of the page lists every changed course by name. The highlight clears automatically once you click through to acknowledge it.
+
+- Automatic background snapshot on every page visit
+- Pulsing teal highlight on any course tab where marks changed
+- Top-of-page banner listing all updated courses
+- One-click acknowledgement — highlight clears when you visit the tab
+
+---
+
+### 05 — Transcript PDF Export
+Generate a clean, print-ready academic transcript straight from the portal. The exported document is styled with university branding, organises all semesters into clearly formatted tables, and shows your CGPA in a prominent summary bar. Open it in a new tab and print or save as PDF in one click.
+
+- Full semester-by-semester course breakdown
+- SGPA and CGPA shown per semester and overall
+- University-branded header — looks like an official document
+- Accessible from the extension popup on the Transcript page
+
+---
+
+### 06 — Feedback Autofill
+Course feedback forms taking too long? Select your preferred response — Strongly Agree, Agree, Uncertain, Dissatisfied, Strongly Disagree, or Randomised — and Flex Prime fills in every question simultaneously. What used to take minutes now takes one click.
+
+- Six response options including a smart randomise mode
+- Fills every question on the form in one shot
+- Accessible directly from the extension popup
+
+---
+
+### 07 — Theme Engine
+FlexStudent's default UI is dated and hard on the eyes during late-night sessions. Flex Prime rebuilds the entire portal with a polished design system using Plus Jakarta Sans and JetBrains Mono typefaces, smooth animations, and refined card layouts. Choose from three carefully crafted themes.
+
+- **Midnight** — deep navy/slate dark theme for night sessions *(default)*
+- **Classic** — clean white/blue premium light theme
+- **Nordic** — authentic Nord Arctic colour palette
+- Theme persists across sessions and page navigations
+
+---
+
+### 08 — Smart Keyboard Shortcuts
+Every core feature is reachable without touching the mouse. Press a shortcut from anywhere on the FlexStudent portal and Flex Prime navigates to the correct page automatically — without logging you out — then activates the feature once the page has loaded.
+
+| Shortcut | Feature |
+|---|---|
+| `Ctrl + Shift + F` | Fix Grand Total Marks (navigates if needed) |
+| `Ctrl + Shift + S` | Launch GPA Calculator (navigates if needed) |
+
+---
+
+## 🎨 Themes
+
+**Midnight**
+<img width="1734" height="542" alt="image" src="https://github.com/user-attachments/assets/b2b1bc65-b7e5-4913-b084-6201ed1422ef" />
+
+**Classic**
+<img width="1717" height="539" alt="image" src="https://github.com/user-attachments/assets/60f9ee51-243f-4552-b911-d589ff697b5a" />
+
+**Nordic**
+<img width="1718" height="543" alt="image" src="https://github.com/user-attachments/assets/b606e8a2-1fc5-45a4-b752-53166d889bd6" />
+
+---
 
 ## 🚀 Installation
 
-To install Flex Prime, you will need to load the extension into your browser in "developer mode." Follow these steps:
+1. **Download the ZIP** — Download the latest FlexPrime `.zip` file. Keep it as a zip for now.
+2. **Open Chrome Extensions** — Navigate to `chrome://extensions` in Google Chrome (or `edge://extensions` for Edge).
+3. **Enable Developer Mode** — Toggle on "Developer mode" in the top-right corner of the Extensions page.
+4. **Extract the ZIP** — Extract the FlexPrime `.zip` to any folder. You should see `background.js`, `content.js`, `popup.html`, `popup.js`, `manifest.json`, and `favicon.png`.
+5. **Load the Extension** — Click "Load unpacked" and select the extracted FlexPrime folder. The extension will appear in your list immediately.
+6. **Pin to Toolbar** — Click the puzzle-piece icon in Chrome's toolbar, find Flex Prime, and pin it for quick access.
 
-1.  **Download the Repository**: ⬇️ Clone or download the Flex Prime repository to your local machine.
-    ```bash
-    git clone https://github.com/your-username/flex-prime.git
-    # Replace 'your-username/flex-prime' with the actual repository URL
-    ```
-2.  **Open Extension Management**: 🌐 Navigate to your browser's extension management page:
-    *   **Chrome/Brave/Edge**: Type `chrome://extensions` or `edge://extensions` into the address bar.
-    *   **Firefox**: Type `about:debugging#/runtime/this-firefox` into the address bar.
-3.  **Enable Developer Mode**: ⚙️ On the extension management page, toggle on "Developer mode" (usually found in the top-right corner for Chromium-based browsers).
-4.  **Load Unpacked Extension**: 📦
-    *   **Chrome/Brave/Edge**: Click the "Load unpacked" button and select the entire `flex-prime` directory you downloaded.
-    *   **Firefox**: Click "Load Temporary Add-on..." and select the `manifest.json` file located inside the `flex-prime` directory.
-5.  **Pin the Extension (Optional)**: 📌 For easy access, click the puzzle piece icon (or equivalent) in your browser's toolbar and pin the Flex Prime icon.
+**Updating to a new version:** Extract the new ZIP, then go to `chrome://extensions`, find Flex Prime, and click the reload icon on its card. No need to remove and re-add it.
 
-## 💡 Usage
+> **Firefox:** Go to `about:debugging#/runtime/this-firefox`, click "Load Temporary Add-on...", and select the `manifest.json` file inside the extracted folder.
 
-Once Flex Prime is installed and enabled, it will automatically activate when you visit the FAST University Flex LMS portal.
-
-1.  **Accessing Features**: 🚀 Simply navigate to the relevant pages within the Flex portal.
-    *   Features like CGPA calculation, grand total marks correction, transcript export, and admit card printing will appear contextually on your academic record pages, transcript view, or specific administrative sections.
-    *   The theme engine controls will likely be accessible either via the extension's popup window (by clicking the Flex Prime icon in your browser's toolbar) or integrated directly into the Flex portal UI.
-    *   Feedback automation will become active on the course feedback submission pages.
-2.  **Using the Popup**: 💬 Click the Flex Prime extension icon in your browser's toolbar to open the popup interface, where you might find quick settings, theme selection options, or toggles for specific features.
-
---
-
-## Themes
-
-<img width="1734" height="542" alt="image" src="https://github.com/user-attachments/assets/b2b1bc65-b7e5-4913-b084-6201ed1422ef" />
-
-<img width="1717" height="539" alt="image" src="https://github.com/user-attachments/assets/60f9ee51-243f-4552-b911-d589ff697b5a" />
-
-<img width="1718" height="543" alt="image" src="https://github.com/user-attachments/assets/b606e8a2-1fc5-45a4-b752-53166d889bd6" />
-
---
+---
 
 ## 🤝 Contributing
 
-We welcome contributions from the community to make Flex Prime even better! Whether you're reporting a bug, suggesting a new feature, or submitting code, your input is invaluable. 🙏
+Bug reports, feature suggestions, and pull requests are all welcome.
 
-1.  **Reporting Bugs**: 🐛 If you encounter any issues or unexpected behavior, please open a new issue on the GitHub repository. Provide a detailed description of the bug, steps to reproduce it, and information about your browser environment.
-2.  **Suggesting Features**: ✨ Have an idea for a new feature or an improvement that could benefit the Flex portal experience? Open an issue to discuss your proposal. We'd love to hear your thoughts!
-3.  **Code Contributions**: 💻
-    *   Fork the repository to your GitHub account.
-    *   Create a new branch for your feature or bug fix (e.g., `git checkout -b feature/your-feature-name` or `bugfix/issue-number`).
-    *   Make your changes using **JavaScript** and **HTML** as the primary technologies for the extension logic and UI.
-    *   Commit your changes with clear and descriptive messages.
-    *   Push your branch to your fork and open a pull request against the main repository. Please ensure your code adheres to good practices and is well-commented.
+- **Bugs** — Open a GitHub issue with a description, steps to reproduce, and your browser version.
+- **Feature ideas** — Open an issue to discuss the proposal before writing code.
+- **Pull requests** — Fork the repo, create a branch (`feature/name` or `bugfix/issue`), make your changes in JavaScript/HTML, and open a PR against `main` with a clear description.
 
-Thank you for helping improve Flex Prime for the entire FAST University community! 🌟
+---
+
+*Built with care by [Abdul Rauf](https://www.linkedin.com/in/abdul-rauf17/) — FAST-NUCES Islamabad*
