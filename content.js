@@ -1033,7 +1033,7 @@
       body.insertBefore(banner, body.firstChild);
     }
 
-    function runHighlighter() {
+    function runHighlighter(isFinalRun) {
       const currentSnapshot = scrapeSnapshot();
       if (Object.keys(currentSnapshot).length === 0) return; // Page not loaded yet
 
@@ -1041,8 +1041,10 @@
         const seen = res.jf_seen_updates || [];
 
         if (!res.marks_snapshot) {
-          // First visit — save baseline, nothing to highlight
-          chrome.storage.local.set({ marks_snapshot: JSON.stringify(currentSnapshot) });
+          // First ever visit — save baseline only on the final run when all data is loaded
+          if (isFinalRun) {
+            chrome.storage.local.set({ marks_snapshot: JSON.stringify(currentSnapshot) });
+          }
           return;
         }
 
@@ -1072,13 +1074,19 @@
           showBanner(changed);
         }
 
-        // Always update snapshot to latest real values
-        chrome.storage.local.set({ marks_snapshot: JSON.stringify(currentSnapshot) });
+        // Only save updated snapshot on final run — when all AJAX data is fully loaded
+        // This prevents the 600ms partial snapshot from overwriting the real baseline
+        if (isFinalRun) {
+          chrome.storage.local.set({ marks_snapshot: JSON.stringify(currentSnapshot) });
+        }
       });
     }
 
-    // Run after page data loads (marks page uses AJAX)
-    [600, 1200, 2500].forEach(ms => setTimeout(runHighlighter, ms));
+    // Run comparison early passes for UI speed, but only commit snapshot on the final pass
+    // when all course data has loaded via AJAX (marks page loads tabs lazily)
+    setTimeout(() => runHighlighter(false), 600);
+    setTimeout(() => runHighlighter(false), 1500);
+    setTimeout(() => runHighlighter(true),  3500);
   }
 
   // Kick off marks highlighter on marks pages
