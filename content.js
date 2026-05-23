@@ -904,18 +904,54 @@
     btn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
   }
 
+  // ── SIDEBAR MARKS ICON HIGHLIGHT ─────────────────────────────────────────
+  // Puts a teal ring on the Marks nav icon when any course has updated marks.
   function injectSidebarBadges() {
-    // Replaced by injectMarksHighlighter below
+    if (!document.getElementById('jf-sidebar-ring-style')) {
+      const s = document.createElement('style');
+      s.id = 'jf-sidebar-ring-style';
+      s.textContent = `
+        @keyframes jf-sidebar-pulse {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(0,229,192,0.0); }
+          50%       { box-shadow: 0 0 0 5px rgba(0,229,192,0.45); }
+        }
+        .jf-sidebar-ring {
+          outline: 2px solid #00e5c0 !important;
+          outline-offset: 3px !important;
+          border-radius: 10px !important;
+          animation: jf-sidebar-pulse 2s ease-in-out infinite !important;
+        }
+      `;
+      document.head.appendChild(s);
+    }
   }
 
-  // ── MARKS CHANGE HIGHLIGHTER ─────────────────────────────────────────────
-  // Runs on StudentMarks page. Compares current marks to stored snapshot.
-  // Highlights the course tab pill of any course whose marks have changed.
+  function setSidebarMarksRing(hasUpdates) {
+    // Find the Marks link in the sidebar by href
+    const marksLink = document.querySelector(
+      'a[href*="StudentMarks"], .m-menu__item a[href*="Marks"]'
+    );
+    if (!marksLink) return;
+    if (hasUpdates) {
+      marksLink.classList.add('jf-sidebar-ring');
+    } else {
+      marksLink.classList.remove('jf-sidebar-ring');
+    }
+  }
 
+  // Check storage on every page load and apply sidebar ring if updates pending
+  chrome.storage.local.get(['jf_seen_updates', 'marks_snapshot', 'jf_pending_courses'], (res) => {
+    if (res.jf_pending_courses && res.jf_pending_courses.length > 0) {
+      injectSidebarBadges();
+      // Wait for sidebar to render
+      setTimeout(() => setSidebarMarksRing(true), 800);
+    }
+  });
+
+  // ── MARKS CHANGE HIGHLIGHTER ─────────────────────────────────────────────
   function injectMarksHighlighter() {
     if (!window.location.href.includes('Student/StudentMarks')) return;
 
-    // Inject highlight styles
     if (!document.getElementById('jf-highlight-style')) {
       const s = document.createElement('style');
       s.id = 'jf-highlight-style';
@@ -974,116 +1010,256 @@
           from { opacity: 0; transform: translateY(-6px); }
           to   { opacity: 1; transform: translateY(0); }
         }
+        /* ── Per-section updated label + card highlight ── */
+        @keyframes jf-section-flash {
+          0%   { background: rgba(0,229,192,0.22); }
+          50%  { background: rgba(0,229,192,0.08); }
+          100% { background: rgba(0,229,192,0.22); }
+        }
+        @keyframes jf-pill-glow {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(0,229,192,0.0); }
+          50%       { box-shadow: 0 0 8px 2px rgba(0,229,192,0.6); }
+        }
+        /* The card itself gets a teal left border + background pulse */
+        .jf-card-updated {
+          border-left: 3px solid #00e5c0 !important;
+          animation: jf-section-flash 2s ease-in-out infinite !important;
+        }
+        /* The card-header text row */
+        .jf-card-updated > .card-header {
+          color: #00e5c0 !important;
+          font-weight: 700 !important;
+        }
+        /* The pill badge — high specificity to beat theme's color overrides */
+        span.jf-section-updated,
+        .card-header span.jf-section-updated,
+        .tab-pane span.jf-section-updated,
+        .tab-content span.jf-section-updated {
+          display: inline-flex !important;
+          align-items: center !important;
+          gap: 5px !important;
+          background: #00e5c0 !important;
+          color: #0a0a0a !important;
+          font-size: 10px !important;
+          font-weight: 900 !important;
+          font-family: 'JetBrains Mono', monospace !important;
+          letter-spacing: 0.8px !important;
+          padding: 3px 9px !important;
+          border-radius: 5px !important;
+          margin-left: 10px !important;
+          vertical-align: middle !important;
+          animation: jf-fadein 0.3s ease, jf-pill-glow 1.8s ease-in-out infinite !important;
+          box-shadow: 0 0 10px rgba(0,229,192,0.5) !important;
+          text-shadow: none !important;
+        }
+        span.jf-section-updated::before,
+        .card-header span.jf-section-updated::before {
+          content: '▲';
+          font-size: 8px;
+          color: #0a0a0a !important;
+        }
       `;
       document.head.appendChild(s);
     }
 
+    // ── Snapshot structure: { courseTitle: { sectionName: "serialised rows" } }
     function scrapeSnapshot() {
       const snapshot = {};
       document.querySelectorAll("div[class*='tab-pane']").forEach(course => {
         const tabId = course.id;
         const title = document.querySelector(`a[href="#${tabId}"]`)?.textContent?.trim() || tabId;
-        const rows = [];
+        const sections = {};
 
-        // Total column rows (individual assessment rows)
-        course.querySelectorAll('[class*="totalColumn_"]').forEach(row => {
-          const obt = row.querySelector('.totalColObtMarks')?.textContent?.trim();
-          const wt  = row.querySelector('.totalColweightage')?.textContent?.trim();
-          if (obt !== undefined || wt !== undefined) rows.push(`w${wt}:o${obt}`);
-        });
+        // Each section is a div.card with a div.card-header (name) and div.collapse (data)
+        const inner = course.children[0];
+        if (inner) {
+          Array.from(inner.querySelectorAll(':scope > div.card')).forEach(card => {
+            const headerEl = card.querySelector('.card-header');
+            if (!headerEl) return;
+            // Clone so we can strip the UPDATED pill without mutating the DOM
+            const headerClone = headerEl.cloneNode(true);
+            headerClone.querySelectorAll('.jf-section-updated').forEach(el => el.remove());
+            const sectionName = headerClone.textContent?.trim();
+            if (!sectionName || sectionName === 'Grand Total Marks') return;
+            const rows = [];
+            card.querySelectorAll('[class*="totalColumn_"]').forEach(row => {
+              const obt = row.querySelector('.totalColObtMarks')?.textContent?.trim();
+              const wt  = row.querySelector('.totalColweightage')?.textContent?.trim();
+              if (obt !== undefined || wt !== undefined) rows.push(`w${wt}:o${obt}`);
+            });
+            card.querySelectorAll('.calculationrow').forEach(cr => {
+              const avg = cr.querySelector('.AverageMarks')?.textContent?.trim();
+              const tot = cr.querySelector('.GrandTotal')?.textContent?.trim();
+              if (avg !== undefined) rows.push(`avg${avg}_tot${tot}`);
+            });
+            if (rows.length > 0) sections[sectionName] = rows.join('|');
+          });
+        }
 
-        // Calculation rows (quiz/sessional aggregates)
-        course.querySelectorAll('.calculationrow').forEach(cr => {
-          const avg = cr.querySelector('.AverageMarks')?.textContent?.trim();
-          const tot = cr.querySelector('.GrandTotal')?.textContent?.trim();
-          if (avg !== undefined) rows.push(`avg${avg}_tot${tot}`);
-        });
-
-        if (rows.length > 0) snapshot[title] = rows.join('|');
+        if (Object.keys(sections).length > 0) snapshot[title] = sections;
       });
       return snapshot;
     }
 
-    function highlightCourse(tabLink, courseTitle) {
+    // Returns list of changed section names for a given course, or [] if none
+    function getChangedSections(prevCourse, currCourse) {
+      if (!prevCourse) return Object.keys(currCourse); // all new
+      const changed = [];
+      for (const sec in currCourse) {
+        if (prevCourse[sec] !== currCourse[sec]) changed.push(sec);
+      }
+      return changed;
+    }
+
+    // Highlight the section card-header inside a course pane
+    function highlightSections(coursePane, changedSections) {
+      if (!coursePane) return;
+      const inner = coursePane.children[0];
+      if (!inner) return;
+      changedSections.forEach(secName => {
+        Array.from(inner.querySelectorAll(':scope > div.card')).forEach(card => {
+          const headerEl = card.querySelector('.card-header');
+          if (!headerEl) return;
+          // Strip pill before comparing so repeated runs don't break the match
+          const headerClone = headerEl.cloneNode(true);
+          headerClone.querySelectorAll('.jf-section-updated').forEach(el => el.remove());
+          if (headerClone.textContent.trim() === secName) {
+            // Highlight the whole card
+            card.classList.add('jf-card-updated');
+            // Add bold pill to header if not already there
+            if (!headerEl.querySelector('.jf-section-updated')) {
+              const pill = document.createElement('span');
+              pill.className = 'jf-section-updated';
+              pill.textContent = 'NEW MARKS';
+              headerEl.appendChild(pill);
+            }
+          }
+        });
+      });
+    }
+
+    function clearSectionHighlights(coursePane) {
+      if (!coursePane) return;
+      coursePane.querySelectorAll('.jf-section-updated').forEach(el => el.remove());
+      coursePane.querySelectorAll('.jf-card-updated').forEach(el => el.classList.remove('jf-card-updated'));
+    }
+
+    function highlightCourse(tabLink, courseTitle, coursePane, changedSections) {
       if (!tabLink) return;
       tabLink.classList.add('jf-updated-tab');
-      // Remove highlight when user clicks on that tab (they've seen it)
+
+      // If this is already the active pane, inject section pills immediately
+      if (coursePane && (coursePane.classList.contains('active') || coursePane.classList.contains('show'))) {
+        highlightSections(coursePane, changedSections);
+      }
+
+      // First click: show section pills (pane now active), start acknowledgement timer
       tabLink.addEventListener('click', () => {
-        tabLink.classList.remove('jf-updated-tab');
-        // Clear just this course from the changed list
-        chrome.storage.local.get(['jf_seen_updates'], (r) => {
-          const seen = r.jf_seen_updates || [];
-          if (!seen.includes(courseTitle)) seen.push(courseTitle);
-          chrome.storage.local.set({ jf_seen_updates: seen });
-        });
+        // Wait for Bootstrap to switch the pane before injecting pills
+        setTimeout(() => highlightSections(coursePane, changedSections), 120);
+
+        // Second click (or after 8s of viewing): treat as acknowledged — clear everything
+        const acknowledge = () => {
+          tabLink.classList.remove('jf-updated-tab');
+          clearSectionHighlights(coursePane);
+          chrome.storage.local.get(['jf_seen_updates', 'jf_pending_courses'], (r) => {
+            const seen = r.jf_seen_updates || [];
+            if (!seen.includes(courseTitle)) seen.push(courseTitle);
+            const pending = (r.jf_pending_courses || []).filter(c => c !== courseTitle);
+            chrome.storage.local.set({ jf_seen_updates: seen, jf_pending_courses: pending }, () => {
+              if (pending.length === 0) {
+                document.getElementById('jf-update-banner')?.remove();
+                setSidebarMarksRing(false);
+              } else {
+                const banner = document.getElementById('jf-update-banner');
+                if (banner) {
+                  const span = banner.querySelector('span');
+                  if (span) span.innerHTML = `Marks updated in <strong>${pending.length} course${pending.length > 1 ? 's' : ''}</strong>: ${pending.join(', ')}`;
+                }
+              }
+            });
+          });
+        };
+
+        // Auto-acknowledge after 6s of viewing, or on next click of this tab
+        const autoTimer = setTimeout(acknowledge, 6000);
+        tabLink.addEventListener('click', () => { clearTimeout(autoTimer); acknowledge(); }, { once: true });
+
       }, { once: true });
     }
 
     function showBanner(changedCourses) {
       const body = document.querySelector('.m-portlet__body, .m-content, .m-wrapper');
-      if (!body || document.getElementById('jf-update-banner')) return;
+      if (!body) return;
+      // Remove any existing banner so we can redraw fresh
+      document.getElementById('jf-update-banner')?.remove();
       const banner = document.createElement('div');
       banner.id = 'jf-update-banner';
       banner.className = 'jf-marks-banner';
-      const names = changedCourses.join(', ');
       banner.innerHTML = `
         <div class="jf-banner-dot"></div>
-        <span>Marks updated in <strong>${changedCourses.length} course${changedCourses.length > 1 ? 's' : ''}</strong>: ${names}</span>
+        <span>Marks updated in <strong>${changedCourses.length} course${changedCourses.length > 1 ? 's' : ''}</strong>: ${changedCourses.join(', ')}</span>
       `;
       body.insertBefore(banner, body.firstChild);
     }
 
     function runHighlighter(isFinalRun) {
       const currentSnapshot = scrapeSnapshot();
-      if (Object.keys(currentSnapshot).length === 0) return; // Page not loaded yet
+      if (Object.keys(currentSnapshot).length === 0) return;
 
       chrome.storage.local.get(['marks_snapshot', 'jf_seen_updates'], (res) => {
         const seen = res.jf_seen_updates || [];
 
         if (!res.marks_snapshot) {
-          // First ever visit — save baseline only on the final run when all data is loaded
           if (isFinalRun) {
-            chrome.storage.local.set({ marks_snapshot: JSON.stringify(currentSnapshot) });
+            chrome.storage.local.set({ marks_snapshot: JSON.stringify(currentSnapshot), jf_pending_courses: [] });
           }
           return;
         }
 
         const prevSnapshot = JSON.parse(res.marks_snapshot);
-        const changed = [];
+        const changed = []; // [ { title, pane, sections[] } ]
 
         for (const courseTitle in currentSnapshot) {
-          if (seen.includes(courseTitle)) continue; // Already acknowledged
-          if (prevSnapshot[courseTitle] !== currentSnapshot[courseTitle]) {
-            changed.push(courseTitle);
+          if (seen.includes(courseTitle)) continue;
+          const changedSecs = getChangedSections(prevSnapshot[courseTitle], currentSnapshot[courseTitle]);
+          if (changedSecs.length > 0) {
+            // Find course pane and tab link
+            let pane = null;
+            document.querySelectorAll("div[class*='tab-pane']").forEach(p => {
+              const tabId = p.id;
+              const t = document.querySelector(`a[href="#${tabId}"]`)?.textContent?.trim();
+              if (t === courseTitle) pane = p;
+            });
+            changed.push({ title: courseTitle, pane, sections: changedSecs });
           }
         }
 
         if (changed.length > 0) {
-          // Highlight each changed course tab
-          changed.forEach(courseTitle => {
-            // Find the nav tab link for this course
+          const titles = changed.map(c => c.title);
+          // Save pending list so sidebar ring persists across pages
+          chrome.storage.local.set({ jf_pending_courses: titles });
+          setSidebarMarksRing(true);
+
+          changed.forEach(({ title, pane, sections }) => {
             const allLinks = document.querySelectorAll('.nav-tabs a, .nav-tabs .nav-link, [role="tab"]');
             let found = null;
             allLinks.forEach(link => {
-              if (link.textContent.trim().includes(courseTitle) || courseTitle.includes(link.textContent.trim())) {
+              if (link.textContent.trim().includes(title) || title.includes(link.textContent.trim())) {
                 found = link;
               }
             });
-            highlightCourse(found, courseTitle);
+            highlightCourse(found, title, pane, sections);
           });
-          showBanner(changed);
+          showBanner(titles);
         }
 
-        // Only save updated snapshot on final run — when all AJAX data is fully loaded
-        // This prevents the 600ms partial snapshot from overwriting the real baseline
         if (isFinalRun) {
           chrome.storage.local.set({ marks_snapshot: JSON.stringify(currentSnapshot) });
         }
       });
     }
 
-    // Run comparison early passes for UI speed, but only commit snapshot on the final pass
-    // when all course data has loaded via AJAX (marks page loads tabs lazily)
     setTimeout(() => runHighlighter(false), 600);
     setTimeout(() => runHighlighter(false), 1500);
     setTimeout(() => runHighlighter(true),  3500);
