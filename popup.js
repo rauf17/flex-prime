@@ -63,16 +63,9 @@ btnMarks.addEventListener('click', () => {
 btnGpa.addEventListener('click', () => {
   getActiveTab((tab) => {
     if (!isFlexHost(tab)) return showToast('Open FlexStudent first', 'error');
-    const transcriptUrl = 'https://flexstudent.nu.edu.pk/Student/Transcript';
-    if (tab.url.includes('Transcript')) {
-      // Already on transcript page — inject directly
-      chrome.scripting.executeScript({ target: { tabId: tab.id }, function: calculatorMainFunction });
-      showToast('GPA Calculator activated!');
-    } else {
-      // Navigate first, inject once loaded
-      chrome.tabs.update(tab.id, { url: transcriptUrl });
-      showToast('Opening Transcript page...');
-    }
+    if (!tab.url.includes('Transcript')) return showToast('Open Transcript page first', 'error');
+    chrome.scripting.executeScript({ target: { tabId: tab.id }, function: calculatorMainFunction });
+    showToast('GPA Calculator activated!');
   });
 });
 
