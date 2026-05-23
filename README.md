@@ -105,10 +105,10 @@ Every core feature is reachable without touching the mouse. Press a shortcut fro
 ## 🎨 Themes
 
 **Midnight**
-<img width="1734" height="542" alt="image" src="https://github.com/user-attachments/assets/b2b1bc65-b7e5-4913-b084-6201ed1422ef" />
+<img width="1717" height="539" alt="image" src="https://github.com/user-attachments/assets/60f9ee51-243f-4552-b911-d589ff697b5a" />
 
 **Classic**
-<img width="1717" height="539" alt="image" src="https://github.com/user-attachments/assets/60f9ee51-243f-4552-b911-d589ff697b5a" />
+<img width="1734" height="542" alt="image" src="https://github.com/user-attachments/assets/b2b1bc65-b7e5-4913-b084-6201ed1422ef" />
 
 **Nordic**
 <img width="1718" height="543" alt="image" src="https://github.com/user-attachments/assets/b606e8a2-1fc5-45a4-b752-53166d889bd6" />
