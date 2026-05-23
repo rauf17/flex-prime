@@ -41,12 +41,25 @@ The default attendance page only shows a vague progress bar. Flex Prime overlays
 ---
 
 ### 04 — Marks Change Highlighter
-Tired of checking every course tab manually to see if new marks were uploaded? Flex Prime silently snapshots your marks on every visit. The next time anything changes, the affected course tab glows with a pulsing teal highlight and an "UPDATED" badge. A banner at the top of the page lists every changed course by name. The highlight clears automatically once you click through to acknowledge it.
+Tired of checking every course tab manually to see if new marks were uploaded? Flex Prime silently snapshots your marks on every visit. The next time anything changes, multiple layers of alerts fire simultaneously so you can't miss it.
 
-- Automatic background snapshot on every page visit
-- Pulsing teal highlight on any course tab where marks changed
-- Top-of-page banner listing all updated courses
-- One-click acknowledgement — highlight clears when you visit the tab
+**Course-level alerts:**
+- Pulsing teal glow + "UPDATED" badge on the affected course tab
+- Top-of-page banner listing every updated course by name
+- Teal ring on the Marks icon in the sidebar — visible on every page of the portal
+
+**Section-level alerts (when you click the course tab):**
+- The exact section where marks changed (Quiz, Assignment, Sessional, etc.) gets a glowing teal left border and pulsing background
+- A bold "▲ NEW MARKS" pill appears next to the section name — impossible to miss
+- All other sections remain untouched so you know exactly what's new
+
+**Acknowledgement:**
+- Highlights clear automatically after 6 seconds of viewing, or immediately on a second click
+- Banner updates in real-time as you acknowledge each course — disappears when all are seen
+- Sidebar ring clears once all pending updates are acknowledged
+
+<img width="1918" height="777" alt="marks_highlight" src="https://github.com/user-attachments/assets/846d936b-6ab9-44e7-812d-e71ce9096dde" />
+
 
 ---
 
