@@ -140,18 +140,78 @@ function marksMainFunction() {
         if (obt) totalObtained += parseFloat(obt);
       });
       
+      const parseNumber = (text) => {
+        const value = parseFloat(text?.replace(/,/g, '').trim());
+        return Number.isFinite(value) ? value : null;
+      };
+
+      const sectionStats = new Map();
       course.querySelectorAll('.calculationrow').forEach(cr => {
-        const avg = cr.querySelector('.AverageMarks')?.textContent;
-        const tot = cr.querySelector('.GrandTotal')?.textContent;
-        const wt = cr.querySelector('.weightage')?.textContent;
-        const mn = cr.querySelector('.MinMarks')?.textContent;
-        const mx = cr.querySelector('.MaxMarks')?.textContent;
-        if (avg && tot && wt) {
-          const ratio = parseFloat(wt) / parseFloat(tot);
-          totalAverage += parseFloat(avg) * ratio;
-          totalMin += parseFloat(mn) * ratio;
-          totalMax += parseFloat(mx) * ratio;
+        const rowName = (cr.querySelector('td, th')?.textContent || '').trim();
+        const sectionCard = cr.closest('.card');
+        const sectionName = sectionCard?.querySelector('.card-header')?.textContent?.trim() || 'default';
+        const weight = parseNumber(cr.querySelector('.weightage')?.textContent);
+        const totalMarks = parseNumber(cr.querySelector('.GrandTotal')?.textContent);
+        const avg = parseNumber(cr.querySelector('.AverageMarks')?.textContent);
+        const mn = parseNumber(cr.querySelector('.MinMarks')?.textContent);
+        const mx = parseNumber(cr.querySelector('.MaxMarks')?.textContent);
+
+        if (!sectionStats.has(sectionName)) {
+          sectionStats.set(sectionName, { entries: [], targetWeight: null });
         }
+        const stats = sectionStats.get(sectionName);
+
+        if (/^total$/i.test(rowName) && weight !== null) {
+          stats.targetWeight = weight;
+          return;
+        }
+
+        if (avg !== null && totalMarks > 0 && weight !== null) {
+          const ratio = weight / totalMarks;
+          stats.entries.push({
+            contribution: avg * ratio,
+            minContribution: mn !== null ? mn * ratio : 0,
+            maxContribution: mx !== null ? mx * ratio : 0,
+            weight,
+            scoreRatio: avg / totalMarks
+          });
+        }
+      });
+
+      sectionStats.forEach(({ entries, targetWeight }) => {
+        const allWeight = entries.reduce((sum, entry) => sum + entry.weight, 0);
+        const sectionWeight = targetWeight !== null ? targetWeight : allWeight;
+        let selected = entries;
+
+        if (allWeight > sectionWeight + 1e-9) {
+          selected = [];
+          let remaining = sectionWeight;
+          entries.sort((a, b) => b.scoreRatio - a.scoreRatio);
+          for (const entry of entries) {
+            if (remaining <= 1e-9) break;
+            if (entry.weight <= remaining + 1e-9) {
+              selected.push(entry);
+              remaining -= entry.weight;
+            } else {
+              const fraction = remaining / entry.weight;
+              selected.push({
+                contribution: entry.contribution * fraction,
+                minContribution: entry.minContribution * fraction,
+                maxContribution: entry.maxContribution * fraction,
+                weight: remaining,
+                scoreRatio: entry.scoreRatio
+              });
+              remaining = 0;
+              break;
+            }
+          }
+        }
+
+        selected.forEach(entry => {
+          totalAverage += entry.contribution;
+          totalMin += entry.minContribution;
+          totalMax += entry.maxContribution;
+        });
       });
 
       document.getElementById('GrandtotalColMarks_' + id).textContent = grandTotal.toFixed(2);
