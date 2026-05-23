@@ -100,18 +100,19 @@ function marksMainFunction() {
         if (obt) totalObtained += parseFloat(obt);
       });
       course.querySelectorAll('.calculationrow').forEach(cr => {
-        const avg = cr.querySelector('.AverageMarks')?.textContent;
-        const tot = cr.querySelector('.GrandTotal')?.textContent;
-        const wt = cr.querySelector('.weightage')?.textContent;
         const mn = cr.querySelector('.MinMarks')?.textContent;
         const mx = cr.querySelector('.MaxMarks')?.textContent;
-        if (avg && tot && wt) {
+        const wt = cr.querySelector('.weightage')?.textContent;
+        const tot = cr.querySelector('.GrandTotal')?.textContent;
+        if (mn && mx && tot && wt) {
           const ratio = parseFloat(wt) / parseFloat(tot);
-          totalAverage += parseFloat(avg) * ratio;
           totalMin += parseFloat(mn) * ratio;
           totalMax += parseFloat(mx) * ratio;
         }
       });
+      if (grandTotal > 0) {
+        totalAverage = (totalObtained / grandTotal) * 100;
+      }
       document.getElementById('GrandtotalColMarks_' + id).textContent = grandTotal.toFixed(2);
       document.getElementById('GrandtotalObtMarks_' + id).textContent = totalObtained.toFixed(2);
       document.getElementById('GrandtotalClassAvg_' + id).textContent = totalAverage.toFixed(2);
