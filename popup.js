@@ -31,6 +31,21 @@ function isFlexHost(tab) {
   return tab?.url?.includes('flexstudent.nu.edu.pk');
 }
 
+// ── Navigate then auto-inject once page loads (mirrors background.js logic) ──
+function injectOnceLoaded(tabId, urlFragment, fn) {
+  const listener = (updatedTabId, changeInfo, updatedTab) => {
+    if (updatedTabId !== tabId) return;
+    if (changeInfo.status !== 'complete') return;
+    if (!updatedTab.url?.includes(urlFragment)) return;
+    chrome.tabs.onUpdated.removeListener(listener);
+    setTimeout(() => {
+      chrome.scripting.executeScript({ target: { tabId }, function: fn });
+    }, 800);
+  };
+  chrome.tabs.onUpdated.addListener(listener);
+  setTimeout(() => chrome.tabs.onUpdated.removeListener(listener), 15000);
+}
+
 // Helper to inject code from existing functions sitewide
 function injectFunction(func, args = []) {
   getActiveTab((tab) => {
@@ -47,14 +62,20 @@ function injectFunction(func, args = []) {
 btnMarks.addEventListener('click', () => {
   getActiveTab((tab) => {
     if (!isFlexHost(tab)) return showToast('Open FlexStudent first', 'error');
-    const marksUrl = 'https://flexstudent.nu.edu.pk/Student/StudentMarks';
     if (tab.url.includes('StudentMarks')) {
-      // Already on marks page — inject directly
       chrome.scripting.executeScript({ target: { tabId: tab.id }, function: marksMainFunction });
       showToast('Grand total fixed!');
     } else {
-      // Navigate first, inject once loaded
-      chrome.tabs.update(tab.id, { url: marksUrl });
+      // Navigate via sidebar click to keep session alive — chrome.tabs.update causes logout
+      chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        func: () => {
+          const link = document.querySelector('a[href*="StudentMarks"]') ||
+                       document.querySelector('a[href="/Student/StudentMarks"]');
+          if (link) { link.click(); } else { window.location.href = '/Student/StudentMarks'; }
+        }
+      });
+      injectOnceLoaded(tab.id, 'StudentMarks', marksMainFunction);
       showToast('Opening Marks page...');
     }
   });
@@ -63,14 +84,20 @@ btnMarks.addEventListener('click', () => {
 btnGpa.addEventListener('click', () => {
   getActiveTab((tab) => {
     if (!isFlexHost(tab)) return showToast('Open FlexStudent first', 'error');
-    const transcriptUrl = 'https://flexstudent.nu.edu.pk/Student/Transcript';
     if (tab.url.includes('Transcript')) {
-      // Already on transcript page — inject directly
       chrome.scripting.executeScript({ target: { tabId: tab.id }, function: calculatorMainFunction });
       showToast('GPA Calculator activated!');
     } else {
-      // Navigate first, inject once loaded
-      chrome.tabs.update(tab.id, { url: transcriptUrl });
+      // Navigate via sidebar click to keep session alive — chrome.tabs.update causes logout
+      chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        func: () => {
+          const link = document.querySelector('a[href*="Transcript"]') ||
+                       document.querySelector('a[href="/Student/Transcript"]');
+          if (link) { link.click(); } else { window.location.href = '/Student/Transcript'; }
+        }
+      });
+      injectOnceLoaded(tab.id, 'Transcript', calculatorMainFunction);
       showToast('Opening Transcript page...');
     }
   });
