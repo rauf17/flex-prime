@@ -1,11 +1,11 @@
 // ── UI refs ──────────────────────────────────────────────────────────────────
-const btnMarks      = document.getElementById('btn-marks');
-const btnGpa        = document.getElementById('btn-gpa');
-const btnFeedback   = document.getElementById('btn-feedback');
-const btnPdf        = document.getElementById('btn-pdf');
-const toast         = document.getElementById('toast');
-const toastSvg      = document.getElementById('toast-svg');
-const toastMsg      = document.getElementById('toast-msg');
+const btnMarks = document.getElementById('btn-marks');
+const btnGpa = document.getElementById('btn-gpa');
+const btnFeedback = document.getElementById('btn-feedback');
+const btnPdf = document.getElementById('btn-pdf');
+const toast = document.getElementById('toast');
+const toastSvg = document.getElementById('toast-svg');
+const toastMsg = document.getElementById('toast-msg');
 
 // ── Toast Logic ──────────────────────────────────────────────────────────────
 let toastTimer;
@@ -130,7 +130,7 @@ function marksMainFunction() {
       const tbody = course.querySelector(`div[id=${course.id}-Grand_Total_Marks] tbody`);
       tbody.innerHTML = '';
       tbody.appendChild(getTr(id));
-      
+
       // Calculation Logic
       let grandTotal = 0, totalObtained = 0, totalAverage = 0, totalMin = 0, totalMax = 0;
       course.querySelectorAll('.totalColumn_' + id).forEach(row => {
@@ -139,15 +139,35 @@ function marksMainFunction() {
         if (wt) grandTotal += parseFloat(wt);
         if (obt) totalObtained += parseFloat(obt);
       });
-      
+
       const parseNumber = (text) => {
         const value = parseFloat(text?.replace(/,/g, '').trim());
         return Number.isFinite(value) ? value : null;
       };
 
       const sectionStats = new Map();
+
+      // First pass: read targetWeight from section Total rows.
+      // These rows have class [class*="totalColumn_"] and their weight cell
+      // uses .totalColweightage — NOT .weightage like regular rows.
+      course.querySelectorAll('.card').forEach(card => {
+        const sectionName = card.querySelector('.card-header')?.textContent?.trim() || 'default';
+        if (!sectionStats.has(sectionName)) {
+          sectionStats.set(sectionName, { entries: [], targetWeight: null });
+        }
+        card.querySelectorAll('[class*="totalColumn_"]').forEach(row => {
+          const weight = parseNumber(row.querySelector('.totalColweightage')?.textContent);
+          if (weight !== null) {
+            sectionStats.get(sectionName).targetWeight = weight;
+          }
+        });
+      });
+
+      // Second pass: collect entries from .calculationrow elements (non-Total rows only)
       course.querySelectorAll('.calculationrow').forEach(cr => {
         const rowName = (cr.querySelector('td, th')?.textContent || '').trim();
+        if (/^total$/i.test(rowName)) return; // already handled above
+
         const sectionCard = cr.closest('.card');
         const sectionName = sectionCard?.querySelector('.card-header')?.textContent?.trim() || 'default';
         const weight = parseNumber(cr.querySelector('.weightage')?.textContent);
@@ -160,11 +180,6 @@ function marksMainFunction() {
           sectionStats.set(sectionName, { entries: [], targetWeight: null });
         }
         const stats = sectionStats.get(sectionName);
-
-        if (/^total$/i.test(rowName) && weight !== null) {
-          stats.targetWeight = weight;
-          return;
-        }
 
         if (avg !== null && totalMarks > 0 && weight !== null) {
           const ratio = weight / totalMarks;
@@ -250,12 +265,12 @@ function calculatorMainFunction() {
   // Build a styled <select> with the current grade pre-selected
   const getSelect = (currGradeText) => {
     const options = [
-      ['-1',  '— Select —'],
-      ['4',   'A / A+'], ['3.67', 'A-'],
-      ['3.33','B+'],     ['3',    'B'],  ['2.67','B-'],
-      ['2.33','C+'],     ['2',    'C'],  ['1.67','C-'],
-      ['1.33','D+'],     ['1',    'D'],  ['0',   'F'],
-      ['-2',  'S'],      ['-3',   'U'],
+      ['-1', '— Select —'],
+      ['4', 'A / A+'], ['3.67', 'A-'],
+      ['3.33', 'B+'], ['3', 'B'], ['2.67', 'B-'],
+      ['2.33', 'C+'], ['2', 'C'], ['1.67', 'C-'],
+      ['1.33', 'D+'], ['1', 'D'], ['0', 'F'],
+      ['-2', 'S'], ['-3', 'U'],
     ];
     const curr = currGradeText.trim();
     const currVal = gradeToValue(curr);
@@ -331,12 +346,12 @@ function calculatorMainFunction() {
         const cells = row.querySelectorAll('td');
         if (cells.length < 5) return;
 
-        const courseName  = cells[1]?.innerText?.trim() || '';
-        const ch          = parseInt(cells[3]?.innerText?.replace(/\s/g, '') || '0') || 0;
-        let gradeValue    = -1;
+        const courseName = cells[1]?.innerText?.trim() || '';
+        const ch = parseInt(cells[3]?.innerText?.replace(/\s/g, '') || '0') || 0;
+        let gradeValue = -1;
 
         const gradeCell = cells[4];
-        const selectEl  = gradeCell?.querySelector('select');
+        const selectEl = gradeCell?.querySelector('select');
 
         if (selectEl) {
           gradeValue = parseFloat(selectEl.value);
@@ -426,7 +441,7 @@ function transcriptPdfFunction() {
   let studentName = nameMatch ? nameMatch[1].trim() : "Student";
   const rollMatch = pageText.match(/Roll No:\s*([^\s\n|]+)/i);
   let rollNo = rollMatch ? rollMatch[1].trim() : "N/A";
-  
+
   const tabTitle = "Transcript - " + studentName;
   const generatedDate = new Date().toLocaleDateString('en-PK', {
     year: 'numeric', month: 'long', day: 'numeric'
@@ -447,11 +462,11 @@ function transcriptPdfFunction() {
       }
     });
     if (rows.length > 0) {
-      semesters.push({ 
-        title: semTitle, 
+      semesters.push({
+        title: semTitle,
         sgpa: summaryLine.match(/SGPA\s*[:\-]?\s*([\d.]+)/i)?.[1] || '0.00',
         cgpa: summaryLine.match(/CGPA\s*[:\-]?\s*([\d.]+)/i)?.[1] || '0.00',
-        rows 
+        rows
       });
     }
   });
@@ -651,12 +666,12 @@ themeOptions.forEach(label => {
 
     const theme = radio.value;
     radio.checked = true;
-    
+
     chrome.storage.local.set({ 'jf_theme': theme, 'dark_mode_global': (theme !== 'light') }, () => {
       getActiveTab((tab) => {
         chrome.scripting.executeScript({
           target: { tabId: tab.id },
-          func: (t) => { 
+          func: (t) => {
             if (typeof applyClaudeTheme === 'function') applyClaudeTheme(t);
           },
           args: [theme]
@@ -681,14 +696,14 @@ chrome.storage.local.get(['jf_theme'], (res) => {
 themeRadios.forEach(radio => {
   radio.addEventListener('change', () => {
     const theme = radio.value;
-    chrome.storage.local.set({ 
-      'jf_theme': theme, 
-      'dark_mode_global': (theme !== 'light') 
+    chrome.storage.local.set({
+      'jf_theme': theme,
+      'dark_mode_global': (theme !== 'light')
     }, () => {
       getActiveTab((tab) => {
         chrome.scripting.executeScript({
           target: { tabId: tab.id },
-          func: (t) => { 
+          func: (t) => {
             if (typeof applyClaudeTheme === 'function') applyClaudeTheme(t);
           },
           args: [theme]
@@ -728,7 +743,7 @@ if (btnTestHighlight) {
             const rows = [];
             course.querySelectorAll('[class*="totalColumn_"]').forEach(row => {
               const obt = row.querySelector('.totalColObtMarks')?.textContent?.trim();
-              const wt  = row.querySelector('.totalColweightage')?.textContent?.trim();
+              const wt = row.querySelector('.totalColweightage')?.textContent?.trim();
               if (obt !== undefined || wt !== undefined) rows.push(`w${wt}:o${obt}`);
             });
             course.querySelectorAll('.calculationrow').forEach(cr => {
