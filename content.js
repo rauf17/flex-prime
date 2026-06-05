@@ -27,7 +27,7 @@
     link.id = 'jf-fonts';
     link.rel = 'stylesheet';
     link.href = 'https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap';
-    document.head.appendChild(link);
+    if (document.head) { document.head.appendChild(link); } else { document.addEventListener("DOMContentLoaded", () => document.head.appendChild(link)); }
   }
 
   // Accepts full theme string ('light', 'dark', 'nord')
@@ -743,15 +743,19 @@
 
     document.head.appendChild(style);
 
-    // Inject status badge
-    if (!document.getElementById('jf-status-badge')) {
-      const badge = document.createElement('div');
-      badge.id = 'jf-status-badge';
-      badge.textContent = 'Flex Prime';
-      document.body.appendChild(badge);
-    } else {
-      document.getElementById('jf-status-badge').textContent = 'Flex Prime';
-    }
+    // Inject status badge — defer if body not ready (document_start)
+    const _injectBadge = () => {
+      if (!document.body) return;
+      if (!document.getElementById('jf-status-badge')) {
+        const badge = document.createElement('div');
+        badge.id = 'jf-status-badge';
+        badge.textContent = 'Flex Prime';
+        document.body.appendChild(badge);
+      } else {
+        document.getElementById('jf-status-badge').textContent = 'Flex Prime';
+      }
+    };
+    if (document.body) { _injectBadge(); } else { document.addEventListener('DOMContentLoaded', _injectBadge); }
   }
 
   // ── ATTENDANCE: inject absent count + fix progress bar ──
@@ -897,6 +901,7 @@
     btn.id = 'jf-scroll-top';
     btn.innerHTML = '↑';
     btn.style.cssText = 'display:none;';
+    if (!document.body) { document.addEventListener("DOMContentLoaded", injectScrollTopBtn); return; }
     document.body.appendChild(btn);
     window.addEventListener('scroll', () => {
       btn.style.display = window.scrollY > 300 ? 'flex' : 'none';
@@ -922,7 +927,7 @@
           animation: jf-sidebar-pulse 2s ease-in-out infinite !important;
         }
       `;
-      document.head.appendChild(s);
+      if (document.head) { document.head.appendChild(s); } else { document.addEventListener("DOMContentLoaded", () => document.head.appendChild(s)); }
     }
   }
 
@@ -949,8 +954,12 @@
   });
 
   // ── MARKS CHANGE HIGHLIGHTER ─────────────────────────────────────────────
+  const SNAPSHOT_VERSION = '2.2'; // bump this on every release to auto-clear stale snapshots
+
   function injectMarksHighlighter() {
     if (!window.location.href.includes('Student/StudentMarks')) return;
+
+      // Snapshot version check removed — was wiping baseline on every reload
 
     if (!document.getElementById('jf-highlight-style')) {
       const s = document.createElement('style');
@@ -1082,21 +1091,27 @@
             const sectionName = headerClone.textContent?.trim();
             if (!sectionName || sectionName === 'Grand Total Marks') return;
             const rows = [];
+            // Use innerHTML-level scraping so collapsed sections still yield data
             card.querySelectorAll('[class*="totalColumn_"]').forEach(row => {
-              const obt = row.querySelector('.totalColObtMarks')?.textContent?.trim();
-              const wt  = row.querySelector('.totalColweightage')?.textContent?.trim();
-              if (obt !== undefined || wt !== undefined) rows.push(`w${wt}:o${obt}`);
+              const obtEl = row.querySelector('.totalColObtMarks');
+              const wtEl  = row.querySelector('.totalColweightage');
+              // Read textContent OR innerText — works even when collapsed
+              const obt = obtEl?.textContent?.trim() || obtEl?.getAttribute('data-value') || '';
+              const wt  = wtEl?.textContent?.trim()  || wtEl?.getAttribute('data-value')  || '';
+              if (obt || wt) rows.push(`w${wt}:o${obt}`);
             });
             card.querySelectorAll('.calculationrow').forEach(cr => {
               const avg = cr.querySelector('.AverageMarks')?.textContent?.trim();
               const tot = cr.querySelector('.GrandTotal')?.textContent?.trim();
               if (avg !== undefined) rows.push(`avg${avg}_tot${tot}`);
             });
-            if (rows.length > 0) sections[sectionName] = rows.join('|');
+            // Store even if rows is empty — so we detect when data appears for first time
+            sections[sectionName] = rows.length > 0 ? rows.join('|') : '__empty__';
           });
         }
 
-        if (Object.keys(sections).length > 0) snapshot[title] = sections;
+        // Always store the course — even with no data yet, so we detect first-time uploads
+        snapshot[title] = sections;
       });
       return snapshot;
     }
@@ -1105,8 +1120,21 @@
     function getChangedSections(prevCourse, currCourse) {
       if (!prevCourse) return Object.keys(currCourse); // all new
       const changed = [];
+      // Check sections in current that differ from prev
       for (const sec in currCourse) {
+        if (currCourse[sec] === '__empty__') continue; // tab not loaded yet, skip
         if (prevCourse[sec] !== currCourse[sec]) changed.push(sec);
+      }
+      // Also check sections in prev that exist in curr but with real data now
+      // (handles case where prev had data but curr scrape missed it due to collapsed tab)
+      for (const sec in prevCourse) {
+        if (changed.includes(sec)) continue;
+        if (prevCourse[sec] === '__empty__') continue;
+        if (currCourse[sec] === '__empty__') continue; // curr not loaded, don't flag
+        if (!(sec in currCourse) && prevCourse[sec] !== '__empty__') {
+          // Section vanished from scrape — tab probably collapsed, don't flag as changed
+          continue;
+        }
       }
       return changed;
     }
@@ -1170,6 +1198,11 @@
               if (pending.length === 0) {
                 document.getElementById('jf-update-banner')?.remove();
                 setSidebarMarksRing(false);
+                // All courses acknowledged — now safe to commit the latest snapshot as new baseline
+                const freshSnap = scrapeSnapshot();
+                if (Object.keys(freshSnap).length > 0) {
+                  chrome.storage.local.set({ marks_snapshot: JSON.stringify(freshSnap), jf_seen_updates: [] });
+                }
               } else {
                 const banner = document.getElementById('jf-update-banner');
                 if (banner) {
@@ -1255,14 +1288,22 @@
         }
 
         if (isFinalRun) {
-          chrome.storage.local.set({ marks_snapshot: JSON.stringify(currentSnapshot) });
+          // Only overwrite baseline when:
+          // 1. No changes detected this run, AND
+          // 2. No pending unacknowledged courses from a previous session
+          // This prevents a fresh page load from wiping a pending diff before the user sees it.
+          const pendingFromStorage = res.jf_pending_courses || [];
+          if (changed.length === 0 && pendingFromStorage.length === 0) {
+            chrome.storage.local.set({ marks_snapshot: JSON.stringify(currentSnapshot) });
+          }
         }
       });
     }
 
-    setTimeout(() => runHighlighter(false), 600);
+    setTimeout(() => runHighlighter(false),  600);
     setTimeout(() => runHighlighter(false), 1500);
-    setTimeout(() => runHighlighter(true),  3500);
+    setTimeout(() => runHighlighter(false), 3500);
+    setTimeout(() => runHighlighter(true),  5500);
   }
 
   // Kick off marks highlighter on marks pages
