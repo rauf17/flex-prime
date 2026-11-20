@@ -1,0 +1,20 @@
+{
+  "name": "flex-prime",
+  "version": "2.5.0",
+  "description": "Browser extension that supercharges the FAST-NUCES FlexStudent portal.",
+  "private": true,
+  "license": "MIT",
+  "author": "Abdul Rauf",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rauf17/flex-prime.git"
+  },
+  "scripts": {
+    "check": "node scripts/check-syntax.js",
+    "test": "node --test",
+    "package": "node scripts/build-zip.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

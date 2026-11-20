@@ -176,8 +176,34 @@
     return out;
   }
 
+  // ── Notification text ──────────────────────────────────────────────────────
+  // Built here (not in background.js) so the unit tests and the documentation previews use the exact same strings.
+  const clip = (text) => text.slice(0, 300); // Chrome truncates long notification bodies
+
+  function marksAlertMessage(changed) { // changed: [{ title, secs }]
+    return { title: 'Flex Prime: new marks added', message: clip(changed.map(c => `${c.title}: ${c.secs.join(', ')}`).join('\n')) };
+  }
+
+  function attendanceAlertMessage(fresh) { // fresh: [{ title, pct }]
+    return { title: 'Flex Prime: attendance below 80%', message: clip(fresh.map(c => `${c.title}: ${c.pct.toFixed(2)}%`).join('\n')) };
+  }
+
+  function feeAlertMessage(fresh) { // fresh: [{ amount, due, daysLeft }]
+    const line = (d) => d.daysLeft < 0 ? `${d.amount} was due on ${d.due} (overdue)`
+      : d.daysLeft === 0 ? `${d.amount} is due TODAY (${d.due})`
+      : `${d.amount} is due in ${d.daysLeft} day${d.daysLeft > 1 ? 's' : ''} (${d.due})`;
+    return { title: 'Flex Prime: fee challan reminder', message: clip(fresh.map(line).join('\n')) };
+  }
+
+  // ── CGPA planner maths ─────────────────────────────────────────────────────
+  // C = current CGPA, E = credit hours counted so far, H = credit hours this semester.
+  // target * (E + H) = C * E + sgpa * H
+  const requiredSgpa = (C, E, H, target) => (target * (E + H) - C * E) / H;
+  const projectedCgpa = (C, E, H, sgpa) => (C * E + sgpa * H) / (E + H);
+
   root.FPSnap = {
     scrapeSnapshot, changedSections, paneTotals, courseTotals, semLabel, scanOlderSemesters,
-    attendanceStats, attendanceAlerts, parseFlexDate, challanRows, feeReminders
+    attendanceStats, attendanceAlerts, parseFlexDate, challanRows, feeReminders,
+    marksAlertMessage, attendanceAlertMessage, feeAlertMessage, requiredSgpa, projectedCgpa
   };
 })(typeof self !== 'undefined' ? self : window);

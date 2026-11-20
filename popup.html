@@ -82,6 +82,18 @@
       padding: 4px 9px; border-radius: 6px; font-weight: 700; font-size: 10.5px;
     }
 
+    /* ── WHAT'S NEW ── */
+    .whats-new {
+      display: none; align-items: flex-start; gap: 8px; padding: 7px 10px;
+      border-radius: var(--r); font-size: 11px; line-height: 1.35;
+      background: var(--accent-dim); border: 1px solid var(--accent); color: #3b3399;
+    }
+    .whats-new.show { display: flex; }
+    .whats-new span { flex: 1; }
+    .whats-new button {
+      background: none; border: 0; color: inherit; cursor: pointer; font-size: 12px; line-height: 1; padding: 2px 4px;
+    }
+
     /* ── TOOLS: 2 x 2 grid ── */
     .tools { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
     .tool {
@@ -200,6 +212,12 @@
   <div class="update-banner" id="update-banner">
     <span id="update-text">A new version is available</span>
     <a id="update-link" href="https://github.com/rauf17/flex-prime/archive/refs/heads/main.zip" target="_blank" rel="noopener">Download</a>
+  </div>
+
+  <!-- WHAT'S NEW (shown once after an update) -->
+  <div class="whats-new" id="whats-new" role="status">
+    <span id="whats-new-text"></span>
+    <button id="whats-new-close" type="button" aria-label="Dismiss what's new">&#10005;</button>
   </div>
 
   <!-- TOOLS -->
@@ -324,6 +342,7 @@
   <span id="toast-msg">Done!</span>
 </div>
 
+<script src="injected.js"></script>
 <script src="popup.js"></script>
 </body>
 </html>

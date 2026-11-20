@@ -6,7 +6,7 @@ Flex Prime is a browser extension built to make the FAST University FlexStudent 
   <img src="screenshots/popup.png" alt="Flex Prime popup: every tool, alert switch, theme and feedback option in one menu" width="340" />
 </p>
 
-> **Latest: version 2.4** adds a single-menu popup, older-semester marks, an all-semesters summary page, background alerts for marks, attendance and fees, a CGPA target planner and an update notifier. See the [features](#-features) below.
+> **Latest: version 2.5** (MIT licensed). Recent versions added a single-menu popup, older-semester marks, an all-semesters summary page, background alerts for marks, attendance and fees, a CGPA target planner, an update notifier and a "what's new" note after updates. See the [features](#-features) below.
 
 ---
 
@@ -143,6 +143,10 @@ While your browser is open and you are logged in to Flex, Flex Prime checks in t
 
 Each alert has its own switch in the extension popup. Alerts need the browser to be open and you to be logged in; if your session has expired they simply wait. They use Chrome's offscreen page API, so they work in Chrome and Edge.
 
+<p align="center"><img src="screenshots/notifications.png" alt="Simulated preview of the marks, attendance and fee notifications" width="440" /></p>
+
+*A simulated preview. The text comes from Flex Prime's own notification code, using sample data; the exact look depends on your operating system.*
+
 ---
 
 ### 12 — CGPA Target Planner
@@ -158,7 +162,7 @@ The extension checks GitHub twice a day. If a newer version exists, the extensio
 ---
 
 ### 14 — One-Menu Popup
-The popup fits everything in one screen with no scrolling: the four tools, the three alert switches, the theme picker and the feedback autofill.
+The popup fits everything in one screen with no scrolling: the four tools, the three alert switches, the theme picker and the feedback autofill. After an update it also shows a one-time "what's new" line that you can dismiss.
 
 ---
 
@@ -190,7 +194,7 @@ Flex Prime runs entirely in your browser.
 1. **Download the ZIP** — Download the latest FlexPrime `.zip` file. Keep it as a zip for now.
 2. **Open Chrome Extensions** — Navigate to `chrome://extensions` in Google Chrome (or `edge://extensions` for Edge).
 3. **Enable Developer Mode** — Toggle on "Developer mode" in the top-right corner of the Extensions page.
-4. **Extract the ZIP** — Extract the FlexPrime `.zip` to any folder. You should see `manifest.json`, `background.js`, `content.js`, `snapshot.js`, `marks-extras.js`, `transcript-extras.js`, `summary.html`, `summary.js`, `offscreen.html`, `offscreen.js`, `popup.html`, `popup.js` and `favicon.png`.
+4. **Extract the ZIP** — Extract the FlexPrime `.zip` to any folder. You should see `manifest.json`, `background.js`, `content.js`, `snapshot.js`, `injected.js`, `marks-extras.js`, `transcript-extras.js`, `summary.html`, `summary.js`, `offscreen.html`, `offscreen.js`, `popup.html`, `popup.js`, `favicon.png` and `LICENSE`.
 5. **Load the Extension** — Click "Load unpacked" and select the extracted FlexPrime folder. The extension will appear in your list immediately.
 6. **Pin to Toolbar** — Click the puzzle-piece icon in Chrome's toolbar, find Flex Prime, and pin it for quick access.
 
@@ -206,7 +210,36 @@ Bug reports, feature suggestions, and pull requests are all welcome.
 
 - **Bugs** — Open a GitHub issue with a description, steps to reproduce, and your browser version.
 - **Feature ideas** — Open an issue to discuss the proposal before writing code.
-- **Pull requests** — Fork the repo, create a branch (`feature/name` or `bugfix/issue`), make your changes in JavaScript/HTML, and open a PR against `main` with a clear description.
+- **Pull requests** — Fork the repo, create a branch (`feature/name` or `bugfix/issue`), make your changes in JavaScript/HTML, run `npm test`, and open a PR against `main` with a clear description.
+
+---
+
+## 🧪 Development
+
+There is nothing to build: load the folder as an unpacked extension (see Installation). Node.js 18+ is only needed for the checks below, and the project has no dependencies.
+
+| Command | What it does |
+|---|---|
+| `npm run check` | Syntax-checks every JavaScript file |
+| `npm test` | Runs the unit tests (alerts, fee reminders, notification text, CGPA planner maths, packaging) |
+| `npm run package` | Builds `dist/FlexPrime-<version>.zip` containing only the files users need |
+
+GitHub Actions runs the checks on every push and pull request. Pushing a version tag such as `v2.5` builds the ZIP and attaches it to a GitHub Release.
+
+**Code layout**
+
+- `content.js` — theme engine, attendance badge, marks highlighter, older-semesters dropdown (runs on every Flex page)
+- `snapshot.js` — shared logic: marks snapshots, attendance and fee rules, notification text, CGPA maths
+- `background.js` — shortcuts, the 12-hour checks, notifications, update check
+- `injected.js` — functions the shortcuts and popup run inside Flex pages
+- `popup.html` / `popup.js` — the popup; `summary.html` / `summary.js` — the all-semesters page
+- `marks-extras.js`, `transcript-extras.js` — extra panels on the Marks and Transcript pages
+
+---
+
+## 📄 License
+
+Released under the [MIT License](LICENSE).
 
 ---
 

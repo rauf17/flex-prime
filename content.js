@@ -1,4 +1,5 @@
-// content.js — Flex Prime v4.1 — Complete UI Overhaul
+// content.js — Flex Prime: theme engine, attendance badge, marks change highlighter and older-semesters dropdown.
+// Runs on every FlexStudent page (see manifest.json). Shared helpers live in snapshot.js.
 
 (function () {
   const isAuthPage =
@@ -30,8 +31,8 @@
     if (document.head) { document.head.appendChild(link); } else { document.addEventListener("DOMContentLoaded", () => document.head.appendChild(link)); }
   }
 
-  // Accepts full theme string ('light', 'dark', 'nord')
-  window.applyClaudeTheme = (theme) => {
+  // Called by the popup when you pick a theme: accepts 'dark', 'light' or 'nord'
+  window.applyFlexPrimeTheme = (theme) => {
     applyFlexTheme(theme);
   };
 
@@ -1003,7 +1004,6 @@
   });
 
   // ── MARKS CHANGE HIGHLIGHTER ─────────────────────────────────────────────
-  const SNAPSHOT_VERSION = '2.2'; // bump this on every release to auto-clear stale snapshots
 
   // Which semester is the Marks page really showing? Flex accepts ?semid= in the URL for ANY
   // semester but its dropdown ignores it, so the URL wins, then the dropdown value.

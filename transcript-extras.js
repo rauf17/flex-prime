@@ -5,10 +5,7 @@
   const GRADED = new Set(['A+', 'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D+', 'D', 'F']);
   const fmt2 = (n) => (Math.round(n * 100) / 100).toFixed(2);
 
-  // SGPA needed this semester to end at CGPA `target`.  C = current CGPA, E = credit hours counted so far,
-  // H = credit hours this semester:  target * (E + H) = C * E + sgpa * H
-  const requiredSgpa = (C, E, H, target) => (target * (E + H) - C * E) / H;
-  const projectedCgpa = (C, E, H, sgpa) => (C * E + sgpa * H) / (E + H);
+  const { requiredSgpa, projectedCgpa } = FPSnap; // see snapshot.js
 
   // Read grades from the page. A retaken course counts only with its latest grade (later semesters come later).
   function readTranscript() {
