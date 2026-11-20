@@ -1,7 +1,7 @@
 {
   "name": "Flex Prime",
   "manifest_version": 3,
-  "version": "2.3",
+  "version": "2.4",
   "version_name": "",
   "description": "NU FlexStudent toolkit — GPA calculator, marks fix, attendance tracker & more.",
   "permissions": ["scripting", "tabs", "storage", "alarms", "notifications", "offscreen"],
@@ -15,7 +15,7 @@
   "content_scripts": [
     {
       "matches": ["*://flexstudent.nu.edu.pk/*"],
-      "js": ["snapshot.js", "content.js", "marks-extras.js"],
+      "js": ["snapshot.js", "content.js", "marks-extras.js", "transcript-extras.js"],
       "run_at": "document_start"
     }
   ],

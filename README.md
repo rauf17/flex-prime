@@ -1,10 +1,12 @@
 # ✨ Flex Prime: Supercharge Your FAST University LMS Experience ✨
 
-Flex Prime is a browser extension built to make the FAST University FlexStudent portal actually pleasant to use. It fixes broken features, adds missing ones, and gives the whole interface a modern coat of paint — all without touching your login session.
+Flex Prime is a browser extension built to make the FAST University FlexStudent portal actually pleasant to use. It fixes broken features, adds missing ones, warns you before things go wrong, and gives the whole interface a modern coat of paint, all without touching your login session.
 
 <p align="center">
-  <img width="397" height="686" alt="image" src="https://github.com/user-attachments/assets/fa13dd1e-862c-4db9-927f-eae544a0da44" />
+  <img src="screenshots/popup.png" alt="Flex Prime popup: every tool, alert switch, theme and feedback option in one menu" width="340" />
 </p>
+
+> **Latest: version 2.4** adds a single-menu popup, older-semester marks, an all-semesters summary page, background alerts for marks, attendance and fees, a CGPA target planner and an update notifier. See the [features](#-features) below.
 
 ---
 
@@ -31,10 +33,10 @@ Wondering how your grade choices will affect your GPA? The calculator injects in
 ---
 
 ### 03 — Attendance Tracker
-The default attendance page only shows a vague progress bar. Flex Prime overlays a clear summary badge on every course tab with the exact numbers you need. A warning fires automatically when your attendance drops below the critical 80% threshold.
+The default attendance page only shows a vague progress bar. Flex Prime keeps Flex's own bar visible and adds a clear summary badge on every course tab with the numbers you need. Lectures are counted by their **duration in hours**, so a 3-hour lab counts for more than a 1-hour lecture, and the percentage shown always matches the official one on the portal. A warning appears when attendance drops below the critical 80% threshold.
 
-- Absents, Presents, and Total class count per course
-- Precise attendance percentage calculated per course
+- Absent, present and total **hours** per course
+- The official Flex attendance percentage, always visible
 - Red warning badge when below 80% — never miss the cutoff
 - Updates automatically when switching between course tabs
 
@@ -44,12 +46,12 @@ The default attendance page only shows a vague progress bar. Flex Prime overlays
 Tired of checking every course tab manually to see if new marks were uploaded? Flex Prime silently snapshots your marks on every visit. The next time anything changes, multiple layers of alerts fire simultaneously so you can't miss it.
 
 **Course-level alerts:**
-- Pulsing teal glow + "UPDATED" badge on the affected course tab
+- Pulsing glow + "UPDATED" badge on the affected course tab
 - Top-of-page banner listing every updated course by name
-- Teal ring on the Marks icon in the sidebar — visible on every page of the portal
+- Ring on the Marks icon in the sidebar — visible on every page of the portal
 
 **Section-level alerts (when you click the course tab):**
-- The exact section where marks changed (Quiz, Assignment, Sessional, etc.) gets a glowing teal left border and pulsing background
+- The exact section where marks changed (Quiz, Assignment, Sessional, etc.) gets a glowing left border and pulsing background
 - A bold "▲ NEW MARKS" pill appears next to the section name — impossible to miss
 - All other sections remain untouched so you know exactly what's new
 
@@ -58,8 +60,9 @@ Tired of checking every course tab manually to see if new marks were uploaded? F
 - Banner updates in real-time as you acknowledge each course — disappears when all are seen
 - Sidebar ring clears once all pending updates are acknowledged
 
-<img width="1918" height="777" alt="marks_highlight" src="https://github.com/user-attachments/assets/846d936b-6ab9-44e7-812d-e71ce9096dde" />
+The highlighter only tracks your **latest semester**, so browsing an older semester never creates false "UPDATED" flags. Its colours adapt to the theme you picked, so it stays readable on Midnight, Classic and Nordic.
 
+<img width="1918" height="777" alt="marks_highlight" src="https://github.com/user-attachments/assets/846d936b-6ab9-44e7-812d-e71ce9096dde" />
 
 ---
 
@@ -89,6 +92,8 @@ FlexStudent's default UI is dated and hard on the eyes during late-night session
 - **Classic** — clean white/blue premium light theme
 - **Nordic** — authentic Nord Arctic colour palette
 - Theme persists across sessions and page navigations
+- Every screen, including Flex Prime's own panels, is checked for readable text contrast on all three themes
+- Icons (Home, close button, arrows) render correctly in every theme
 
 ---
 
@@ -103,22 +108,67 @@ Every core feature is reachable without touching the mouse. Press a shortcut fro
 ---
 
 ### 09 — Older Semesters Dropdown
-Flex only lists your last few semesters in the Marks page dropdown, but it still has all your older marks. Flex Prime finds them and adds an "Older semesters" dropdown next to the normal one. The main dropdown also now shows the semester you are really looking at.
+Flex only lists your last few semesters in the Marks page dropdown, but it still keeps all your older marks. Flex Prime finds them and adds an **Older semesters** dropdown next to the normal one, so you can open the marks of any past semester. The main dropdown also now shows the semester you are really looking at, instead of always saying the latest one.
+
+- Finds every older semester automatically (the first scan takes a few seconds, then it is cached for a week)
+- Opens Flex's own marks page for that semester
+- Shows an "(older)" label so you never confuse it with the current semester
+
+<p align="center"><img src="screenshots/marks-older-semesters.png" alt="Older semesters dropdown and the summary button on the Marks page" width="760" /></p>
 
 ---
 
 ### 10 — All Semesters Summary Page
-A separate page that lists every semester you have, with each course's marks so far, the percentage and a semester average, plus your overall average, best course and lowest course. Open it from the "All semesters summary" button on the Marks page or from the extension popup. Past semesters are cached, and Refresh re-reads the recent ones.
+A separate page that lists every semester you have, with each course's marks so far, the percentage and a semester average, plus your overall average, best course and lowest course. Open it from the **All semesters summary** button on the Marks page or from the extension popup. Past semesters are cached, and **Refresh** re-reads the recent ones. The page follows the theme you picked.
+
+<p align="center"><img src="screenshots/summary-midnight.png" alt="All semesters summary page, Midnight theme (sample data)" width="760" /></p>
+
+<details>
+<summary>Classic and Nordic themes</summary>
+
+<img src="screenshots/summary-classic.png" alt="All semesters summary page, Classic theme (sample data)" width="560" />
+<img src="screenshots/summary-nordic.png" alt="All semesters summary page, Nordic theme (sample data)" width="560" />
+</details>
+
+*The screenshots above use sample data.*
 
 ---
 
-### 11 — Marks Alerts
-Every 30 minutes, while your browser is open and you are logged in to Flex, Flex Prime checks for newly added marks and shows a notification. Clicking it opens the Marks page with the changes highlighted. You can switch it off from the extension popup.
+### 11 — Alerts (Marks, Attendance, Fees)
+While your browser is open and you are logged in to Flex, Flex Prime checks in the background **every 12 hours** (and shortly after the browser starts) and shows a notification when:
+
+- **Marks:** new marks are added. Clicking the notification opens the Marks page with the changes highlighted.
+- **Attendance:** a course drops below 80%, using Flex's own percentage. It warns again only if the course drops further.
+- **Fees:** an unpaid fee challan is due within 3 days (a reminder each day), and once more if it becomes overdue.
+
+Each alert has its own switch in the extension popup. Alerts need the browser to be open and you to be logged in; if your session has expired they simply wait. They use Chrome's offscreen page API, so they work in Chrome and Edge.
 
 ---
 
-### 12 — Update Notifier
-The popup checks GitHub twice a day. If a newer version exists, the extension icon shows a "NEW" badge and the popup shows a download button.
+### 12 — CGPA Target Planner
+At the top of the Transcript page, enter the CGPA you want and how many credit hours you have this semester. It shows the SGPA you need, and what your CGPA would be at SGPAs of 4.00, 3.50, 3.00 and 2.50. Retaken courses count with their latest grade, which matches the CGPA Flex itself shows.
+
+<p align="center"><img src="screenshots/cgpa-planner.png" alt="CGPA target planner at the top of the Transcript page" width="760" /></p>
+
+---
+
+### 13 — Update Notifier
+The extension checks GitHub twice a day. If a newer version exists, the extension icon shows a "NEW" badge and the popup shows a **Download** button, so you never miss a bug fix. The check only reads the public version number; nothing about you is sent.
+
+---
+
+### 14 — One-Menu Popup
+The popup fits everything in one screen with no scrolling: the four tools, the three alert switches, the theme picker and the feedback autofill.
+
+---
+
+## 🔒 Privacy
+
+Flex Prime runs entirely in your browser.
+
+- It only talks to **FlexStudent** (using your own login, exactly as when you browse) and to **GitHub** (to read the public version number for the update notifier).
+- Your marks, attendance, grades and fee details are never sent anywhere else. Cached data (older-semester list, summary totals, mark snapshots) stays in your browser's extension storage.
+- It never sees or stores your password.
 
 ---
 
@@ -140,13 +190,13 @@ The popup checks GitHub twice a day. If a newer version exists, the extension ic
 1. **Download the ZIP** — Download the latest FlexPrime `.zip` file. Keep it as a zip for now.
 2. **Open Chrome Extensions** — Navigate to `chrome://extensions` in Google Chrome (or `edge://extensions` for Edge).
 3. **Enable Developer Mode** — Toggle on "Developer mode" in the top-right corner of the Extensions page.
-4. **Extract the ZIP** — Extract the FlexPrime `.zip` to any folder. You should see `background.js`, `content.js`, `popup.html`, `popup.js`, `manifest.json`, and `favicon.png`.
+4. **Extract the ZIP** — Extract the FlexPrime `.zip` to any folder. You should see `manifest.json`, `background.js`, `content.js`, `snapshot.js`, `marks-extras.js`, `transcript-extras.js`, `summary.html`, `summary.js`, `offscreen.html`, `offscreen.js`, `popup.html`, `popup.js` and `favicon.png`.
 5. **Load the Extension** — Click "Load unpacked" and select the extracted FlexPrime folder. The extension will appear in your list immediately.
 6. **Pin to Toolbar** — Click the puzzle-piece icon in Chrome's toolbar, find Flex Prime, and pin it for quick access.
 
-**Updating to a new version:** Extract the new ZIP, then go to `chrome://extensions`, find Flex Prime, and click the reload icon on its card. No need to remove and re-add it.
+**Updating to a new version:** Extract the new ZIP over the old folder, then go to `chrome://extensions`, find Flex Prime, and click the reload icon on its card. No need to remove and re-add it. If Chrome mentions new permissions (notifications, alarms), accept them: they power the background alerts.
 
-> **Firefox:** Go to `about:debugging#/runtime/this-firefox`, click "Load Temporary Add-on...", and select the `manifest.json` file inside the extracted folder.
+> **Firefox:** Go to `about:debugging#/runtime/this-firefox`, click "Load Temporary Add-on...", and select the `manifest.json` file inside the extracted folder. The background alerts need Chrome's offscreen API, so they are available in Chrome and Edge only.
 
 ---
 

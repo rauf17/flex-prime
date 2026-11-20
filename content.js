@@ -144,10 +144,26 @@
       shadow: '0 2px 16px rgba(0,0,0,0.08)', navLink: 'rgba(255,255,255,0.75)', navActive: '#ffffff',
     };
 
+    // Colours for Flex Prime's own UI (highlighter, attendance badge): readable on every theme
+    const jf = theme === 'nord'
+      ? { hl: '#88c0d0', onHl: '#1f2530', bad: '#f0a0a5', good: '#a3be8c', warn: '#ebcb8b', link: '#a9d3e1', onAccent: '#1f2530' }
+      : isDark
+        ? { hl: '#00e5c0', onHl: '#0a0a0a', bad: '#f87171', good: '#4ade80', warn: '#fbbf24', link: '#8fb4ff', onAccent: '#ffffff' }
+        : { hl: '#0f766e', onHl: '#ffffff', bad: '#b91c1c', good: '#15803d', warn: '#b45309', link: '#1d4ed8', onAccent: '#ffffff' };
+
     style.textContent = `
+      :root { --jf-hl: ${jf.hl}; --jf-on-hl: ${jf.onHl}; --jf-bad: ${jf.bad}; --jf-good: ${jf.good}; --jf-warn: ${jf.warn}; --jf-link: ${jf.link}; --jf-on-accent: ${jf.onAccent}; --jf-muted: ${c.textMuted}; --jf-text: ${c.text}; }
+
       /* ── FONTS ── */
       html, body, * { font-family: 'Plus Jakarta Sans', sans-serif !important; }
       .mono, code, pre, [id*="Grandtotal"], td.text-center { font-family: 'JetBrains Mono', monospace !important; }
+
+      /* ── ICON FONTS: the rule above must not turn icons (Home, close, arrows…) into empty squares ── */
+      .la, [class^="la-"], [class*=" la-"] { font-family: 'LineAwesome' !important; }
+      .fa, .fas, [class^="fa-"], [class*=" fa-"] { font-family: 'FontAwesome' !important; }
+      .flaticon, [class^="flaticon-"], [class*=" flaticon-"] { font-family: 'Flaticon' !important; }
+      [class^="socicon-"], [class*=" socicon-"] { font-family: 'socicon' !important; }
+      .m-menu__link-icon, .m-menu__ver-arrow, .m-menu__hor-arrow { font-style: normal !important; }
 
       /* ── PAGE BASE ── */
       html, body,
@@ -586,6 +602,29 @@
       }
       .m-portlet__body { overflow: visible !important; }
 
+      /* ── Flex's outlined alerts sit on a white box: pale text colours were hard to read ── */
+      .alert.alert-info .m-alert__text, .alert.alert-info .m-alert__text * { color: #1565a8 !important; }
+      .alert.alert-danger .m-alert__text, .alert.alert-danger .m-alert__text * { color: #b42318 !important; }
+      .alert.alert-warning .m-alert__text, .alert.alert-warning .m-alert__text * { color: #8a5a00 !important; }
+      .alert.alert-success .m-alert__text, .alert.alert-success .m-alert__text * { color: #1e7e34 !important; }
+
+      /* ── Links in page content and primary buttons: readable on every theme ── */
+      .m-content a:not(.btn):not(.nav-link):not(.dropdown-item):not([class*="m-menu"]) { color: var(--jf-link) !important; }
+      .btn-primary { color: var(--jf-on-accent) !important; }
+
+      /* ── Breadcrumb links in the blue sub-header were purple on blue (unreadable) ── */
+      .m-subheader a, .m-subheader .m-nav__link-text, .m-subheader .m-nav__item a, .m-header-head label a { color: #dbe7ff !important; }
+
+      /* ── Greeting in the top bar: slightly brighter yellow for readable contrast ── */
+      .m-topbar__welcome, .m-topbar__welcome * { color: #ffe066 !important; }
+
+      /* ── Footer text was too faint on light backgrounds ── */
+      .m-footer, .m-footer__copyright, .m-footer .m-footer__copyright { color: ${c.textMuted} !important; }
+
+      /* ── Flex Prime cards (CGPA planner) follow the theme text colour ── */
+      .jf-card { color: ${c.text} !important; }
+      .jf-card input { color: inherit !important; }
+
       /* ── ATTENDANCE % BAR (official Flex value — never hidden) ── */
       .m-portlet__head .progress,
       [class*="tab-pane"] .progress {
@@ -805,27 +844,27 @@
         ? officialPct.toFixed(2)
         : (total > 0 ? ((presentCount / total) * 100).toFixed(1) : '0.0');
       const isLow = parseFloat(pct) < 80;
-      const pctColor = isLow ? '#ef4444' : '#22c55e';
+      const pctColor = isLow ? 'var(--jf-bad, #ef4444)' : 'var(--jf-good, #22c55e)';
       const badge = document.createElement('div');
       badge.className = 'jf-absent-badge';
       badge.style.cssText = `
         display:inline-flex; align-items:center; gap:10px; flex-wrap:wrap;
-        background:rgba(220,38,38,0.10); border:1px solid rgba(220,38,38,0.30);
-        color:#ef4444; border-radius:8px; padding:7px 14px;
+        background:color-mix(in srgb, var(--jf-bad, #dc2626) 10%, transparent); border:1px solid color-mix(in srgb, var(--jf-bad, #dc2626) 30%, transparent);
+        color:var(--jf-bad, #ef4444); border-radius:8px; padding:7px 14px;
         font-size:12px; font-weight:600;
         font-family:'Plus Jakarta Sans','Inter',sans-serif;
         margin-bottom:12px; margin-top:6px;
         width:100%; box-sizing:border-box;
       `;
       badge.innerHTML = `
-        <span>✗ Absent hrs: <strong style="color:#ef4444">${fmt(absentCount)}</strong></span>
-        <span style="color:#64748b">|</span>
-        <span style="color:#22c55e">✓ Present hrs: <strong style="color:#22c55e">${fmt(presentCount)}</strong></span>
-        <span style="color:#64748b">|</span>
-        <span style="color:#94a3b8">Total hrs: <strong style="color:#94a3b8">${fmt(total)}</strong></span>
-        <span style="color:#64748b">|</span>
+        <span>✗ Absent hrs: <strong style="color:var(--jf-bad, #ef4444)">${fmt(absentCount)}</strong></span>
+        <span style="color:var(--jf-muted, #64748b)">|</span>
+        <span style="color:var(--jf-good, #22c55e)">✓ Present hrs: <strong style="color:var(--jf-good, #22c55e)">${fmt(presentCount)}</strong></span>
+        <span style="color:var(--jf-muted, #64748b)">|</span>
+        <span style="color:var(--jf-muted, #94a3b8)">Total hrs: <strong style="color:var(--jf-muted, #94a3b8)">${fmt(total)}</strong></span>
+        <span style="color:var(--jf-muted, #64748b)">|</span>
         <span style="color:${pctColor}">Attendance: <strong style="color:${pctColor}">${pct}%</strong></span>
-        ${isLow ? `<span style="background:rgba(220,38,38,0.2);border:1px solid rgba(220,38,38,0.4);color:#ef4444;border-radius:5px;padding:2px 8px;font-size:11px;">⚠ Below 80%</span>` : ''}
+        ${isLow ? `<span style="background:color-mix(in srgb, var(--jf-bad, #dc2626) 20%, transparent);border:1px solid color-mix(in srgb, var(--jf-bad, #dc2626) 40%, transparent);color:var(--jf-bad, #ef4444);border-radius:5px;padding:2px 8px;font-size:11px;">⚠ Below 80%</span>` : ''}
       `;
       return badge;
     }
@@ -927,11 +966,11 @@
       s.id = 'jf-sidebar-ring-style';
       s.textContent = `
         @keyframes jf-sidebar-pulse {
-          0%, 100% { box-shadow: 0 0 0 0 rgba(0,229,192,0.0); }
-          50%       { box-shadow: 0 0 0 5px rgba(0,229,192,0.45); }
+          0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--jf-hl, #00e5c0) 0%, transparent); }
+          50%       { box-shadow: 0 0 0 5px color-mix(in srgb, var(--jf-hl, #00e5c0) 45%, transparent); }
         }
         .jf-sidebar-ring {
-          outline: 2px solid #00e5c0 !important;
+          outline: 2px solid var(--jf-hl, #00e5c0) !important;
           outline-offset: 3px !important;
           border-radius: 10px !important;
           animation: jf-sidebar-pulse 2s ease-in-out infinite !important;
@@ -991,11 +1030,11 @@
       s.id = 'jf-highlight-style';
       s.textContent = `
         @keyframes jf-tab-pulse {
-          0%, 100% { box-shadow: 0 0 0 0 rgba(0,229,192,0.0); }
-          50%       { box-shadow: 0 0 0 6px rgba(0,229,192,0.35); }
+          0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--jf-hl, #00e5c0) 0%, transparent); }
+          50%       { box-shadow: 0 0 0 6px color-mix(in srgb, var(--jf-hl, #00e5c0) 35%, transparent); }
         }
         .jf-updated-tab {
-          border: 2px solid #00e5c0 !important;
+          border: 2px solid var(--jf-hl, #00e5c0) !important;
           border-radius: 8px !important;
           animation: jf-tab-pulse 1.8s ease-in-out infinite !important;
           position: relative !important;
@@ -1005,8 +1044,8 @@
           position: absolute;
           top: -9px;
           right: -4px;
-          background: #00e5c0;
-          color: #0d0d14;
+          background: var(--jf-hl, #00e5c0);
+          color: var(--jf-on-hl, var(--jf-on-hl, #0a0a0a));
           font-size: 8px;
           font-weight: 800;
           font-family: 'JetBrains Mono', monospace;
@@ -1021,47 +1060,47 @@
           display: flex;
           align-items: center;
           gap: 10px;
-          background: rgba(0,229,192,0.08);
-          border: 1px solid rgba(0,229,192,0.35);
+          background: color-mix(in srgb, var(--jf-hl, #00e5c0) 8%, transparent);
+          border: 1px solid color-mix(in srgb, var(--jf-hl, #00e5c0) 35%, transparent);
           border-radius: 10px;
           padding: 10px 16px;
           margin-bottom: 14px;
           font-family: 'JetBrains Mono', monospace;
           font-size: 12px;
           font-weight: 600;
-          color: #00e5c0;
+          color: var(--jf-hl, #00e5c0);
           animation: jf-fadein 0.4s ease;
         }
         .jf-marks-banner .jf-banner-dot {
           width: 8px; height: 8px; border-radius: 50%;
-          background: #00e5c0;
-          box-shadow: 0 0 8px #00e5c0;
+          background: var(--jf-hl, #00e5c0);
+          box-shadow: 0 0 8px var(--jf-hl, #00e5c0);
           flex-shrink: 0;
           animation: jf-tab-pulse 1.5s infinite;
         }
-        .jf-marks-banner strong { color: #fff; }
+        .jf-marks-banner strong { color: var(--jf-text, #fff); }
         @keyframes jf-fadein {
           from { opacity: 0; transform: translateY(-6px); }
           to   { opacity: 1; transform: translateY(0); }
         }
         /* ── Per-section updated label + card highlight ── */
         @keyframes jf-section-flash {
-          0%   { background: rgba(0,229,192,0.22); }
-          50%  { background: rgba(0,229,192,0.08); }
-          100% { background: rgba(0,229,192,0.22); }
+          0%   { background: color-mix(in srgb, var(--jf-hl, #00e5c0) 22%, transparent); }
+          50%  { background: color-mix(in srgb, var(--jf-hl, #00e5c0) 8%, transparent); }
+          100% { background: color-mix(in srgb, var(--jf-hl, #00e5c0) 22%, transparent); }
         }
         @keyframes jf-pill-glow {
-          0%, 100% { box-shadow: 0 0 0 0 rgba(0,229,192,0.0); }
-          50%       { box-shadow: 0 0 8px 2px rgba(0,229,192,0.6); }
+          0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--jf-hl, #00e5c0) 0%, transparent); }
+          50%       { box-shadow: 0 0 8px 2px color-mix(in srgb, var(--jf-hl, #00e5c0) 60%, transparent); }
         }
         /* The card itself gets a teal left border + background pulse */
         .jf-card-updated {
-          border-left: 3px solid #00e5c0 !important;
+          border-left: 3px solid var(--jf-hl, #00e5c0) !important;
           animation: jf-section-flash 2s ease-in-out infinite !important;
         }
         /* The card-header text row */
         .jf-card-updated > .card-header {
-          color: #00e5c0 !important;
+          color: var(--jf-hl, #00e5c0) !important;
           font-weight: 700 !important;
         }
         /* The pill badge — high specificity to beat theme's color overrides */
@@ -1072,8 +1111,8 @@
           display: inline-flex !important;
           align-items: center !important;
           gap: 5px !important;
-          background: #00e5c0 !important;
-          color: #0a0a0a !important;
+          background: var(--jf-hl, #00e5c0) !important;
+          color: var(--jf-on-hl, #0a0a0a) !important;
           font-size: 10px !important;
           font-weight: 900 !important;
           font-family: 'JetBrains Mono', monospace !important;
@@ -1083,14 +1122,14 @@
           margin-left: 10px !important;
           vertical-align: middle !important;
           animation: jf-fadein 0.3s ease, jf-pill-glow 1.8s ease-in-out infinite !important;
-          box-shadow: 0 0 10px rgba(0,229,192,0.5) !important;
+          box-shadow: 0 0 10px color-mix(in srgb, var(--jf-hl, #00e5c0) 50%, transparent) !important;
           text-shadow: none !important;
         }
         span.jf-section-updated::before,
         .card-header span.jf-section-updated::before {
           content: '▲';
           font-size: 8px;
-          color: #0a0a0a !important;
+          color: var(--jf-on-hl, #0a0a0a) !important;
         }
       `;
       document.head.appendChild(s);

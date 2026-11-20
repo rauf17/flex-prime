@@ -8,12 +8,15 @@
   <style>
     :root {
       --bg: #0a0e1a; --card: #111827; --border: #1e2d4a; --text: #e2e8f0; --muted: #94a3b8; --accent: #00e5c0; --track: #1e293b;
+      --good: #22c55e; --ok: #60a5fa; --mid: #fbbf24; --bad: #f87171; --on-accent: #06251f;
     }
     :root[data-theme="light"] {
-      --bg: #f1f5f9; --card: #ffffff; --border: #e2e8f0; --text: #0f172a; --muted: #64748b; --accent: #0d9488; --track: #e2e8f0;
+      --bg: #f1f5f9; --card: #ffffff; --border: #cbd5e1; --text: #0f172a; --muted: #526074; --accent: #0f766e; --track: #e2e8f0;
+      --good: #15803d; --ok: #1d4ed8; --mid: #b45309; --bad: #b91c1c; --on-accent: #ffffff;
     }
     :root[data-theme="nord"] {
-      --bg: #2e3440; --card: #3b4252; --border: #4c566a; --text: #eceff4; --muted: #a3b1c6; --accent: #88c0d0; --track: #434c5e;
+      --bg: #2e3440; --card: #3b4252; --border: #4c566a; --text: #eceff4; --muted: #b4c0d4; --accent: #88c0d0; --track: #4c566a;
+      --good: #a3be8c; --ok: #88c0d0; --mid: #ebcb8b; --bad: #f0a0a5; --on-accent: #1f2530;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { background: var(--bg); color: var(--text); font-family: 'Plus Jakarta Sans', system-ui, sans-serif; font-size: 14px; }
@@ -23,7 +26,7 @@
     h1 span { color: var(--accent); }
     .sub { color: var(--muted); font-size: 12px; margin-top: 4px; }
     .actions { display: flex; gap: 8px; }
-    button, a.btn { background: var(--accent); color: #0a0a0a; border: 0; border-radius: 8px; padding: 8px 14px;
+    button, a.btn { background: var(--accent); color: var(--on-accent); border: 0; border-radius: 8px; padding: 8px 14px;
       font: inherit; font-weight: 700; font-size: 12px; cursor: pointer; text-decoration: none; }
     button.ghost, a.btn.ghost { background: transparent; color: var(--text); border: 1px solid var(--border); }
     button:disabled { opacity: .5; cursor: default; }

@@ -799,13 +799,18 @@ document.getElementById('btn-summary').addEventListener('click', () => {
   chrome.runtime.sendMessage({ type: 'check-update' }, () => { void chrome.runtime.lastError; show(); });
 })();
 
-// ── Marks alerts on/off ──────────────────────────────────────────────────────
-(function () {
-  const toggle = document.getElementById('alerts-toggle');
+// ── Alert switches (marks / attendance / fees) ──────────────────────────────
+// Each switch stores "off" under its own key, so alerts are on by default.
+[
+  ['alerts-toggle', 'jf_alerts_off', 'Marks alerts'],
+  ['att-toggle', 'jf_att_alerts_off', 'Attendance alerts'],
+  ['fee-toggle', 'jf_fee_alerts_off', 'Fee reminders']
+].forEach(([id, key, name]) => {
+  const toggle = document.getElementById(id);
   if (!toggle) return;
-  chrome.storage.local.get(['jf_alerts_off'], (res) => { toggle.checked = !res.jf_alerts_off; });
+  chrome.storage.local.get([key], (res) => { toggle.checked = !res[key]; });
   toggle.addEventListener('change', () => {
-    chrome.storage.local.set({ jf_alerts_off: !toggle.checked });
-    showToast(toggle.checked ? 'Marks alerts on' : 'Marks alerts off');
+    chrome.storage.local.set({ [key]: !toggle.checked });
+    showToast(`${name} ${toggle.checked ? 'on' : 'off'}`);
   });
-})();
+});

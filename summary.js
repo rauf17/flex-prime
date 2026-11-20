@@ -7,7 +7,8 @@ const TTL_OLD = 30 * 24 * 3600 * 1000;   // older semesters: effectively final
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const fmt = (n) => String(Math.round(n * 100) / 100);
-const pctColor = (p) => p >= 80 ? '#22c55e' : p >= 65 ? '#3b82f6' : p >= 50 ? '#f59e0b' : '#ef4444';
+// Colours come from CSS variables so every theme gets a readable palette
+const pctColor = (p) => p >= 80 ? 'var(--good)' : p >= 65 ? 'var(--ok)' : p >= 50 ? 'var(--mid)' : 'var(--bad)';
 const store = {
   get: (k) => new Promise(r => chrome.storage.local.get(k, r)),
   set: (o) => new Promise(r => chrome.storage.local.set(o, r))

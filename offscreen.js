@@ -4,4 +4,6 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   const doc = new DOMParser().parseFromString(msg.html, 'text/html');
   if (msg.type === 'snapshot') sendResponse({ snapshot: FPSnap.scrapeSnapshot(doc) });
   else if (msg.type === 'totals') sendResponse({ totals: FPSnap.courseTotals(doc) });
+  else if (msg.type === 'attendance') sendResponse({ attendance: FPSnap.attendanceStats(doc) });
+  else if (msg.type === 'challans') sendResponse({ challans: FPSnap.challanRows(doc) });
 });
