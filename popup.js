@@ -773,3 +773,39 @@ if (btnTestHighlight) {
     });
   });
 }
+// ── All Semesters Summary page ───────────────────────────────────────────────
+document.getElementById('btn-summary').addEventListener('click', () => {
+  chrome.tabs.create({ url: chrome.runtime.getURL('summary.html') });
+});
+
+// ── Update notifier ──────────────────────────────────────────────────────────
+// The background script compares our version with manifest.json on GitHub.
+(function () {
+  const banner = document.getElementById('update-banner');
+  const text = document.getElementById('update-text');
+  function show() {
+    chrome.storage.local.get(['jf_update'], (res) => {
+      const u = res.jf_update;
+      if (u && u.hasUpdate) {
+        text.textContent = `New version ${u.remote} is out (you have ${chrome.runtime.getManifest().version})`;
+        banner.classList.add('show');
+      } else {
+        banner.classList.remove('show');
+      }
+    });
+  }
+  show();
+  // Ask for a fresh check, then redraw
+  chrome.runtime.sendMessage({ type: 'check-update' }, () => { void chrome.runtime.lastError; show(); });
+})();
+
+// ── Marks alerts on/off ──────────────────────────────────────────────────────
+(function () {
+  const toggle = document.getElementById('alerts-toggle');
+  if (!toggle) return;
+  chrome.storage.local.get(['jf_alerts_off'], (res) => { toggle.checked = !res.jf_alerts_off; });
+  toggle.addEventListener('change', () => {
+    chrome.storage.local.set({ jf_alerts_off: !toggle.checked });
+    showToast(toggle.checked ? 'Marks alerts on' : 'Marks alerts off');
+  });
+})();

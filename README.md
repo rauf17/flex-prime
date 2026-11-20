@@ -102,6 +102,26 @@ Every core feature is reachable without touching the mouse. Press a shortcut fro
 
 ---
 
+### 09 — Older Semesters Dropdown
+Flex only lists your last few semesters in the Marks page dropdown, but it still has all your older marks. Flex Prime finds them and adds an "Older semesters" dropdown next to the normal one. The main dropdown also now shows the semester you are really looking at.
+
+---
+
+### 10 — All Semesters Summary Page
+A separate page that lists every semester you have, with each course's marks so far, the percentage and a semester average, plus your overall average, best course and lowest course. Open it from the "All semesters summary" button on the Marks page or from the extension popup. Past semesters are cached, and Refresh re-reads the recent ones.
+
+---
+
+### 11 — Marks Alerts
+Every 30 minutes, while your browser is open and you are logged in to Flex, Flex Prime checks for newly added marks and shows a notification. Clicking it opens the Marks page with the changes highlighted. You can switch it off from the extension popup.
+
+---
+
+### 12 — Update Notifier
+The popup checks GitHub twice a day. If a newer version exists, the extension icon shows a "NEW" badge and the popup shows a download button.
+
+---
+
 ## 🎨 Themes
 
 **Midnight**

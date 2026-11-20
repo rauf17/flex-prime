@@ -1096,73 +1096,9 @@
       document.head.appendChild(s);
     }
 
-    // ── Snapshot structure: { courseTitle: { sectionName: "serialised rows" } }
-    function scrapeSnapshot() {
-      const snapshot = {};
-      document.querySelectorAll("div[class*='tab-pane']").forEach(course => {
-        const tabId = course.id;
-        const title = document.querySelector(`a[href="#${tabId}"]`)?.textContent?.trim() || tabId;
-        const sections = {};
-
-        // Each section is a div.card with a div.card-header (name) and div.collapse (data)
-        const inner = course.children[0];
-        if (inner) {
-          Array.from(inner.querySelectorAll(':scope > div.card')).forEach(card => {
-            const headerEl = card.querySelector('.card-header');
-            if (!headerEl) return;
-            // Clone so we can strip the UPDATED pill without mutating the DOM
-            const headerClone = headerEl.cloneNode(true);
-            headerClone.querySelectorAll('.jf-section-updated').forEach(el => el.remove());
-            const sectionName = headerClone.textContent?.trim();
-            if (!sectionName || sectionName === 'Grand Total Marks') return;
-            const rows = [];
-            // Use innerHTML-level scraping so collapsed sections still yield data
-            card.querySelectorAll('[class*="totalColumn_"]').forEach(row => {
-              const obtEl = row.querySelector('.totalColObtMarks');
-              const wtEl  = row.querySelector('.totalColweightage');
-              // Read textContent OR innerText — works even when collapsed
-              const obt = obtEl?.textContent?.trim() || obtEl?.getAttribute('data-value') || '';
-              const wt  = wtEl?.textContent?.trim()  || wtEl?.getAttribute('data-value')  || '';
-              if (obt || wt) rows.push(`w${wt}:o${obt}`);
-            });
-            card.querySelectorAll('.calculationrow').forEach(cr => {
-              const avg = cr.querySelector('.AverageMarks')?.textContent?.trim();
-              const tot = cr.querySelector('.GrandTotal')?.textContent?.trim();
-              if (avg !== undefined) rows.push(`avg${avg}_tot${tot}`);
-            });
-            // Store even if rows is empty — so we detect when data appears for first time
-            sections[sectionName] = rows.length > 0 ? rows.join('|') : '__empty__';
-          });
-        }
-
-        // Always store the course — even with no data yet, so we detect first-time uploads
-        snapshot[title] = sections;
-      });
-      return snapshot;
-    }
-
-    // Returns list of changed section names for a given course, or [] if none
-    function getChangedSections(prevCourse, currCourse) {
-      if (!prevCourse) return Object.keys(currCourse); // all new
-      const changed = [];
-      // Check sections in current that differ from prev
-      for (const sec in currCourse) {
-        if (currCourse[sec] === '__empty__') continue; // tab not loaded yet, skip
-        if (prevCourse[sec] !== currCourse[sec]) changed.push(sec);
-      }
-      // Also check sections in prev that exist in curr but with real data now
-      // (handles case where prev had data but curr scrape missed it due to collapsed tab)
-      for (const sec in prevCourse) {
-        if (changed.includes(sec)) continue;
-        if (prevCourse[sec] === '__empty__') continue;
-        if (currCourse[sec] === '__empty__') continue; // curr not loaded, don't flag
-        if (!(sec in currCourse) && prevCourse[sec] !== '__empty__') {
-          // Section vanished from scrape — tab probably collapsed, don't flag as changed
-          continue;
-        }
-      }
-      return changed;
-    }
+    // Snapshot helpers live in snapshot.js so the background marks alerts use the exact same logic
+    const scrapeSnapshot = () => FPSnap.scrapeSnapshot(document);
+    const getChangedSections = (prev, curr) => FPSnap.changedSections(prev, curr);
 
     // Highlight the section card-header inside a course pane
     function highlightSections(coursePane, changedSections) {
@@ -1343,32 +1279,9 @@
 
 
   // ── OLDER SEMESTERS (beyond the ones in Flex's dropdown) ─────────────────
-  // Flex serves marks for ANY semester via /Student/StudentMarks?semid=YYYYT
-  // (T: 1 = Spring, 2 = Summer, 3 = Fall) even when it's missing from the dropdown.
-  const TERM_NAMES = { '1': 'Spring', '2': 'Summer', '3': 'Fall' };
-  const semLabel = (id) => `${TERM_NAMES[String(id).slice(4)] || 'Term'} ${String(id).slice(0, 4)}`;
-
-  async function scanOlderSemesters(oldestInDropdown) {
-    let year = parseInt(String(oldestInDropdown).slice(0, 4), 10);
-    let term = parseInt(String(oldestInDropdown).slice(4), 10);
-    const step = () => { term--; if (term < 1) { term = 3; year--; } };
-    const found = [];
-    let emptyRun = 0;
-    step();
-    // Stop after 6 empty terms in a row (about 2 years with no data)
-    while (emptyRun < 6 && year >= 2015) {
-      const id = `${year}${term}`;
-      try {
-        const html = await fetch(`/Student/StudentMarks?semid=${id}`, { credentials: 'include' }).then(r => r.text());
-        const doc = new DOMParser().parseFromString(html, 'text/html');
-        const courses = [...doc.querySelectorAll('.nav-tabs a')].map(a => a.textContent.trim()).filter(Boolean);
-        if (courses.length) { found.push({ id, label: semLabel(id), courses }); emptyRun = 0; }
-        else emptyRun++;
-      } catch (e) { return null; } // network problem: don't cache a half result
-      step();
-    }
-    return found;
-  }
+  // The scan itself lives in snapshot.js so the summary page shares it.
+  const semLabel = FPSnap.semLabel;
+  const scanOlderSemesters = (oldest) => FPSnap.scanOlderSemesters('', oldest);
 
   function injectOlderSemesters() {
     if (!window.location.href.includes('Student/StudentMarks')) return;
@@ -1407,6 +1320,7 @@
           list.map(x => `<option value="${x.id}" title="${x.courses.join(', ')}">${x.label}</option>`).join('');
         if (list.some(x => x.id === current)) old.value = current;
         old.style.display = list.length ? '' : 'none';
+        document.dispatchEvent(new CustomEvent('jf-old-semesters')); // lets the summary panel include them
       };
 
       const CACHE_MS = 7 * 24 * 3600 * 1000;

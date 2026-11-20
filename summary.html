@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Flex Prime — All Semesters Summary</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0e1a; --card: #111827; --border: #1e2d4a; --text: #e2e8f0; --muted: #94a3b8; --accent: #00e5c0; --track: #1e293b;
+    }
+    :root[data-theme="light"] {
+      --bg: #f1f5f9; --card: #ffffff; --border: #e2e8f0; --text: #0f172a; --muted: #64748b; --accent: #0d9488; --track: #e2e8f0;
+    }
+    :root[data-theme="nord"] {
+      --bg: #2e3440; --card: #3b4252; --border: #4c566a; --text: #eceff4; --muted: #a3b1c6; --accent: #88c0d0; --track: #434c5e;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: 'Plus Jakarta Sans', system-ui, sans-serif; font-size: 14px; }
+    .wrap { max-width: 880px; margin: 0 auto; padding: 28px 18px 60px; }
+    header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+    h1 { font-size: 22px; font-weight: 800; }
+    h1 span { color: var(--accent); }
+    .sub { color: var(--muted); font-size: 12px; margin-top: 4px; }
+    .actions { display: flex; gap: 8px; }
+    button, a.btn { background: var(--accent); color: #0a0a0a; border: 0; border-radius: 8px; padding: 8px 14px;
+      font: inherit; font-weight: 700; font-size: 12px; cursor: pointer; text-decoration: none; }
+    button.ghost, a.btn.ghost { background: transparent; color: var(--text); border: 1px solid var(--border); }
+    button:disabled { opacity: .5; cursor: default; }
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 18px; }
+    .stat { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; }
+    .stat b { display: block; font-size: 22px; font-family: 'JetBrains Mono', monospace; }
+    .stat span { color: var(--muted); font-size: 12px; }
+    .sem { background: var(--card); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 14px; overflow: hidden; }
+    .sem-head { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px;
+      border-bottom: 1px solid var(--border); font-weight: 800; }
+    .sem-head small { color: var(--muted); font-weight: 600; margin-left: 6px; }
+    .sem-head .avg { font-family: 'JetBrains Mono', monospace; font-size: 13px; }
+    .sem-head a { color: var(--text); text-underline-offset: 3px; }
+    table { width: 100%; border-collapse: collapse; }
+    td { padding: 9px 16px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    tr:last-child td { border-bottom: 0; }
+    td.code { font-weight: 700; width: 22%; }
+    td.marks { font-family: 'JetBrains Mono', monospace; font-size: 12px; width: 24%; color: var(--muted); }
+    td.pct { font-family: 'JetBrains Mono', monospace; font-weight: 700; text-align: right; width: 14%; }
+    .bar { height: 8px; border-radius: 99px; background: var(--track); overflow: hidden; }
+    .bar i { display: block; height: 100%; border-radius: 99px; }
+    .msg { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 22px; text-align: center; color: var(--muted); }
+    .msg b { color: var(--text); }
+    .note { color: var(--muted); font-size: 11px; margin-top: 14px; }
+    @media (max-width: 560px) { td.marks { display: none; } td { padding: 9px 10px; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>Flex <span>Prime</span> · All Semesters Summary</h1>
+        <div class="sub" id="sub">Marks counted so far out of the weightage published, for every semester.</div>
+      </div>
+      <div class="actions">
+        <a class="btn ghost" href="https://flexstudent.nu.edu.pk/Student/StudentMarks" target="_blank" rel="noopener">Open Flex Marks</a>
+        <button id="refresh" type="button">Refresh</button>
+      </div>
+    </header>
+    <div id="stats" class="stats"></div>
+    <div id="content"><div class="msg">Loading…</div></div>
+    <div class="note" id="note"></div>
+  </div>
+  <script src="snapshot.js"></script>
+  <script src="summary.js"></script>
+</body>
+</html>

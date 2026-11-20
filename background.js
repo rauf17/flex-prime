@@ -1,3 +1,126 @@
+// Shared snapshot helpers (changedSections is used for marks alerts)
+if (typeof importScripts === 'function') importScripts('snapshot.js');
+
+const FLEX = 'https://flexstudent.nu.edu.pk';
+const REPO_MANIFEST_URL = 'https://raw.githubusercontent.com/rauf17/flex-prime/main/manifest.json';
+
+// ── ALARMS ───────────────────────────────────────────────────────────────────
+function setupAlarms() {
+  chrome.alarms.create('jf-update', { periodInMinutes: 720 }); // update check: twice a day
+  chrome.alarms.create('jf-marks', { periodInMinutes: 30 });   // marks check: every 30 min
+}
+chrome.runtime.onInstalled.addListener(() => { setupAlarms(); checkForUpdate(); });
+chrome.runtime.onStartup.addListener(() => { setupAlarms(); checkForUpdate(); });
+chrome.alarms.onAlarm.addListener((alarm) => {
+  if (alarm.name === 'jf-update') checkForUpdate();
+  if (alarm.name === 'jf-marks') checkMarksForAlerts();
+});
+chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+  if (msg && msg.type === 'open-summary') {
+    chrome.tabs.create({ url: chrome.runtime.getURL('summary.html') });
+    return;
+  }
+  if (msg && msg.type === 'check-update') {
+    checkForUpdate().then(() => sendResponse({ ok: true }));
+    return true; // keep the channel open for the async reply
+  }
+});
+
+// ── UPDATE CHECK ─────────────────────────────────────────────────────────────
+// Compares our version with the manifest.json currently on GitHub (main branch).
+function isNewer(remote, local) {
+  const a = String(remote).split('.').map(Number), b = String(local).split('.').map(Number);
+  for (let i = 0; i < Math.max(a.length, b.length); i++) {
+    const d = (a[i] || 0) - (b[i] || 0);
+    if (d) return d > 0;
+  }
+  return false;
+}
+
+async function checkForUpdate() {
+  try {
+    const res = await fetch(REPO_MANIFEST_URL, { cache: 'no-store' });
+    if (!res.ok) return;
+    const remote = (await res.json()).version;
+    const local = chrome.runtime.getManifest().version;
+    const hasUpdate = isNewer(remote, local);
+    await chrome.storage.local.set({ jf_update: { remote, local, hasUpdate, at: Date.now() } });
+    chrome.action.setBadgeText({ text: hasUpdate ? 'NEW' : '' });
+    chrome.action.setBadgeBackgroundColor({ color: '#0d9488' });
+  } catch (e) { /* offline or GitHub unreachable: try again next time */ }
+}
+
+// ── MARKS ALERTS ─────────────────────────────────────────────────────────────
+// Every 30 min: fetch the latest semester's marks page with the user's own login,
+// compare with the saved baseline, and show a notification when something changed.
+async function parseInOffscreen(html, type) {
+  if (!(await chrome.offscreen.hasDocument())) {
+    await chrome.offscreen.createDocument({
+      url: 'offscreen.html',
+      reasons: ['DOM_PARSER'],
+      justification: 'Read the FlexStudent marks page to detect newly added marks'
+    });
+  }
+  return chrome.runtime.sendMessage({ target: 'offscreen', type, html });
+}
+
+async function checkMarksForAlerts() {
+  try {
+    const { jf_alerts_off } = await chrome.storage.local.get('jf_alerts_off');
+    if (jf_alerts_off || !chrome.offscreen) return;
+
+    // 1. Find the latest semester id (also tells us if we are still logged in)
+    const home = await fetch(`${FLEX}/Student/StudentMarks`, { credentials: 'include' });
+    if (!home.ok) return;
+    const ids = [...(await home.text()).matchAll(/<option[^>]*value="(\d{5})"/g)].map(m => parseInt(m[1], 10));
+    if (!ids.length) return; // logged out, or a verification page
+    const latest = String(Math.max(...ids));
+
+    // 2. Read its marks
+    const page = await fetch(`${FLEX}/Student/StudentMarks?semid=${latest}`, { credentials: 'include' });
+    if (!page.ok) return;
+    const reply = await parseInOffscreen(await page.text(), 'snapshot');
+    const snapshot = reply && reply.snapshot;
+    if (!snapshot || !Object.keys(snapshot).length) return;
+
+    // 3. Compare with the baseline saved by the Marks page
+    const st = await chrome.storage.local.get(['marks_snapshot', 'marks_snapshot_sem', 'jf_seen_updates', 'jf_last_alert']);
+    if (!st.marks_snapshot || st.marks_snapshot_sem !== latest) return; // no baseline yet: opening Marks once creates it
+    const prev = JSON.parse(st.marks_snapshot);
+    const seen = st.jf_seen_updates || [];
+    const changed = [];
+    for (const title in snapshot) {
+      if (seen.includes(title)) continue;
+      const secs = FPSnap.changedSections(prev[title], snapshot[title]);
+      if (secs.length) changed.push({ title, secs });
+    }
+    if (!changed.length) return;
+
+    // 4. Notify once per distinct change
+    const signature = JSON.stringify(changed.map(c => [c.title, c.secs, c.secs.map(s => snapshot[c.title][s])]));
+    if (st.jf_last_alert === signature) return;
+    await chrome.storage.local.set({
+      jf_last_alert: signature,
+      jf_latest_sem: latest,
+      jf_pending_courses: changed.map(c => c.title)
+    });
+    chrome.notifications.create('jf-marks', {
+      type: 'basic',
+      iconUrl: 'favicon.png',
+      title: 'Flex Prime: new marks added',
+      message: changed.map(c => `${c.title}: ${c.secs.join(', ')}`).join('\n').slice(0, 300),
+      priority: 1
+    });
+  } catch (e) { /* network or parsing problem: try again next time */ }
+}
+
+chrome.notifications.onClicked.addListener(async (id) => {
+  if (id !== 'jf-marks') return;
+  const { jf_latest_sem } = await chrome.storage.local.get('jf_latest_sem');
+  chrome.tabs.create({ url: `${FLEX}/Student/StudentMarks${jf_latest_sem ? `?semid=${jf_latest_sem}` : ''}` });
+  chrome.notifications.clear(id);
+});
+
 // ── COMMAND LISTENER (keyboard shortcuts) ────────────────────────────────────
 chrome.commands.onCommand.addListener((command) => {
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {

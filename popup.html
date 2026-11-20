@@ -293,6 +293,24 @@
     .toast.show { transform: translateY(0); opacity: 1; }
     .toast.error { color: #f87171; }
     .toast svg { width: 13px; height: 13px; flex-shrink: 0; }
+    /* ── UPDATE BANNER + ALERTS ── */
+    .update-banner {
+      display: none; align-items: center; gap: 10px; margin-bottom: 8px;
+      padding: 9px 12px; border-radius: var(--r); font-size: 12px; font-weight: 600;
+      background: var(--teal-dim); border: 1px solid var(--teal); color: var(--teal);
+    }
+    .update-banner.show { display: flex; }
+    .update-banner span { flex: 1; }
+    .update-banner a {
+      color: #fff; background: var(--teal); text-decoration: none;
+      padding: 5px 10px; border-radius: 6px; font-weight: 700; font-size: 11px;
+    }
+    .alert-row {
+      display: flex; align-items: center; gap: 8px; padding: 8px 10px; cursor: pointer;
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--r);
+      font-size: 12px; font-weight: 500; color: var(--text-2);
+    }
+    .alert-row input { accent-color: var(--teal); width: 15px; height: 15px; cursor: pointer; }
   </style>
 </head>
 <body>
@@ -313,6 +331,12 @@
     </div>
     <div class="v-chip">Ragra</div>
   </header>
+
+  <!-- UPDATE BANNER (shown only when a newer version is on GitHub) -->
+  <div class="update-banner" id="update-banner">
+    <span id="update-text">A new version is available</span>
+    <a id="update-link" href="https://github.com/rauf17/flex-prime/archive/refs/heads/main.zip" target="_blank" rel="noopener">Download</a>
+  </div>
 
   <!-- QUICK ACTIONS -->
   <div class="sec">Actions</div>
@@ -357,6 +381,26 @@
     <div class="action-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
   </button>
 
+  <button class="action c-teal" id="btn-summary" type="button">
+    <div class="action-icon c-teal">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#0d9488" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+      </svg>
+    </div>
+    <div class="action-body">
+      <div class="action-title">All Semesters Summary</div>
+      <div class="action-hint">Marks from every semester</div>
+    </div>
+    <div class="action-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
+  </button>
+
+
+  <!-- ALERTS -->
+  <div class="sec">Alerts</div>
+  <label class="alert-row">
+    <input type="checkbox" id="alerts-toggle" checked>
+    Notify me when new marks are added
+  </label>
 
   <!-- THEME -->
   <div class="sec">Theme</div>
