@@ -1,7 +1,7 @@
 {
   "name": "Flex Prime",
   "manifest_version": 3,
-  "version": "2.0",
+  "version": "2.1",
   "version_name": "",
   "description": "NU FlexStudent toolkit — GPA calculator, marks fix, attendance tracker & more.",
   "permissions": ["scripting", "tabs", "storage"],

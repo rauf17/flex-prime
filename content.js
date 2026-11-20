@@ -586,16 +586,17 @@
       }
       .m-portlet__body { overflow: visible !important; }
 
-      /* ── ATTENDANCE % BAR in portlet head ── */
-      .m-portlet__head .progress {
+      /* ── ATTENDANCE % BAR (official Flex value — never hidden) ── */
+      .m-portlet__head .progress,
+      [class*="tab-pane"] .progress {
         display: flex !important;
         visibility: visible !important;
         overflow: hidden !important;
         flex: 1 1 120px !important;
         min-width: 80px !important;
         max-width: 240px !important;
-        height: 10px !important;
-        min-height: 10px !important;
+        height: 20px !important;
+        min-height: 20px !important;
         border-radius: 99px !important;
         background: rgba(255,255,255,0.15) !important;
         align-self: center !important;
@@ -603,13 +604,19 @@
       }
       .m-portlet__head .progress-bar,
       .m-portlet__head .progress-bar-success,
-      .m-portlet__head .progress-bar-info {
+      .m-portlet__head .progress-bar-info,
+      [class*="tab-pane"] .progress-bar {
         display: block !important;
         visibility: visible !important;
-        height: 10px !important;
-        min-height: 10px !important;
+        height: 20px !important;
+        min-height: 20px !important;
         border-radius: 99px !important;
         opacity: 1 !important;
+        text-align: center !important;
+      }
+      .progress-bar h5, .progress .h5 {
+        margin: 0 !important; font-size: 11px !important; line-height: 20px !important;
+        color: #fff !important; font-weight: 700 !important;
       }
 
       /* ── MODAL ── */
@@ -764,21 +771,39 @@
 
     const done = new Set();
 
-    // Remove the "Attendance Percentage:" label + progress bar from portlet heads
-    function removeAttendanceBars() {
-      document.querySelectorAll('.m-portlet__head .progress').forEach(bar => {
-        // Walk up to the direct child of portlet head and remove that whole column
-        let target = bar;
-        while (target.parentElement && !target.parentElement.classList.contains('m-portlet__head')) {
-          target = target.parentElement;
-        }
-        target.remove();
+    // Weight each lecture by its duration (hours), not as a flat 1 per row.
+    function countAttendance(table, rows) {
+      const headers = [...table.querySelectorAll('thead th')].map(th => th.textContent.trim().toLowerCase());
+      let durIdx = headers.findIndex(h => h.includes('duration'));
+      let absentCount = 0, presentCount = 0;
+      rows.forEach(tr => {
+        const cells = tr.querySelectorAll('td');
+        if (!cells.length) return;
+        const presence = cells[cells.length - 1]?.textContent?.trim().toUpperCase();
+        if (presence !== 'A' && presence !== 'P') return;
+        let hours = durIdx >= 0 ? parseFloat(cells[durIdx]?.textContent) : NaN;
+        if (!Number.isFinite(hours) || hours <= 0) hours = 1; // fallback if column missing
+        if (presence === 'A') absentCount += hours;
+        else presentCount += hours;
       });
+      return { absentCount, presentCount };
     }
 
-    function makeBadge(absentCount, presentCount) {
+    // Flex computes the real attendance % on the server and renders it in the
+    // course's progress bar. Use that as the source of truth (it follows NU's own
+    // rules for hours/leaves), so our badge can never disagree with the portal.
+    function getOfficialPct(container) {
+      const el = container?.querySelector('.progress');
+      const v = parseFloat(el?.textContent);
+      return Number.isFinite(v) ? v : null;
+    }
+
+    function makeBadge(absentCount, presentCount, officialPct) {
+      const fmt = n => String(Math.round(n * 100) / 100);
       const total = absentCount + presentCount;
-      const pct = total > 0 ? ((presentCount / total) * 100).toFixed(1) : '0.0';
+      const pct = officialPct !== null
+        ? officialPct.toFixed(2)
+        : (total > 0 ? ((presentCount / total) * 100).toFixed(1) : '0.0');
       const isLow = parseFloat(pct) < 80;
       const pctColor = isLow ? '#ef4444' : '#22c55e';
       const badge = document.createElement('div');
@@ -793,11 +818,11 @@
         width:100%; box-sizing:border-box;
       `;
       badge.innerHTML = `
-        <span>✗ Absents: <strong style="color:#ef4444">${absentCount}</strong></span>
+        <span>✗ Absent hrs: <strong style="color:#ef4444">${fmt(absentCount)}</strong></span>
         <span style="color:#64748b">|</span>
-        <span style="color:#22c55e">✓ Present: <strong style="color:#22c55e">${presentCount}</strong></span>
+        <span style="color:#22c55e">✓ Present hrs: <strong style="color:#22c55e">${fmt(presentCount)}</strong></span>
         <span style="color:#64748b">|</span>
-        <span style="color:#94a3b8">Total: <strong style="color:#94a3b8">${total}</strong></span>
+        <span style="color:#94a3b8">Total hrs: <strong style="color:#94a3b8">${fmt(total)}</strong></span>
         <span style="color:#64748b">|</span>
         <span style="color:${pctColor}">Attendance: <strong style="color:${pctColor}">${pct}%</strong></span>
         ${isLow ? `<span style="background:rgba(220,38,38,0.2);border:1px solid rgba(220,38,38,0.4);color:#ef4444;border-radius:5px;padding:2px 8px;font-size:11px;">⚠ Below 80%</span>` : ''}
@@ -821,21 +846,14 @@
         const rows = table.querySelectorAll('tbody tr');
         if (!rows.length) return;
 
-        let absentCount = 0, presentCount = 0;
-        rows.forEach(tr => {
-          const cells = tr.querySelectorAll('td');
-          if (!cells.length) return;
-          const presence = cells[cells.length - 1]?.textContent?.trim().toUpperCase();
-          if (presence === 'A') absentCount++;
-          else if (presence === 'P') presentCount++;
-        });
+        const { absentCount, presentCount } = countAttendance(table, rows);
 
         if (absentCount + presentCount === 0) return;
 
         // Remove old badge
         pane.querySelector('.jf-absent-badge')?.remove();
 
-        const badge = makeBadge(absentCount, presentCount);
+        const badge = makeBadge(absentCount, presentCount, getOfficialPct(pane));
         // Insert before the table (or before its wrapper div)
         const tableParent = table.parentElement;
         tableParent.insertBefore(badge, table);
@@ -851,19 +869,12 @@
         const rows = table.querySelectorAll('tbody tr');
         if (!rows.length) return;
 
-        let absentCount = 0, presentCount = 0;
-        rows.forEach(tr => {
-          const cells = tr.querySelectorAll('td');
-          if (!cells.length) return;
-          const presence = cells[cells.length - 1]?.textContent?.trim().toUpperCase();
-          if (presence === 'A') absentCount++;
-          else if (presence === 'P') presentCount++;
-        });
+        const { absentCount, presentCount } = countAttendance(table, rows);
 
         if (absentCount + presentCount === 0) return;
         if (body.querySelector('.jf-absent-badge')) return;
 
-        const badge = makeBadge(absentCount, presentCount);
+        const badge = makeBadge(absentCount, presentCount, getOfficialPct(body.closest('[class*="tab-pane"]') || body.closest('.m-portlet')));
         const tableParent = table.parentElement;
         tableParent.insertBefore(badge, table);
         done.add('portlet-' + body.className);
@@ -872,7 +883,6 @@
 
     // Multi-pass: data might load async
     [400, 900, 1800, 3500].forEach(ms => setTimeout(() => {
-      removeAttendanceBars();
       tryInject();
     }, ms));
 
@@ -881,7 +891,7 @@
       const link = e.target.closest('[data-toggle="tab"], .nav-link, .nav-tabs a');
       if (link) {
         done.clear();
-        [300, 800].forEach(ms => setTimeout(() => { removeAttendanceBars(); tryInject(); }, ms));
+        [300, 800].forEach(ms => setTimeout(tryInject, ms));
       }
     });
 
@@ -889,7 +899,7 @@
     let mutTimer;
     const obs = new MutationObserver(() => {
       clearTimeout(mutTimer);
-      mutTimer = setTimeout(() => { removeAttendanceBars(); tryInject(); }, 250);
+      mutTimer = setTimeout(() => tryInject(), 250);
     });
     obs.observe(document.body, { childList: true, subtree: true });
     setTimeout(() => obs.disconnect(), 90000);
