@@ -966,8 +966,23 @@
   // ── MARKS CHANGE HIGHLIGHTER ─────────────────────────────────────────────
   const SNAPSHOT_VERSION = '2.2'; // bump this on every release to auto-clear stale snapshots
 
+  // Which semester is the Marks page really showing? Flex accepts ?semid= in the URL for ANY
+  // semester but its dropdown ignores it, so the URL wins, then the dropdown value.
+  function getMarksSemester() {
+    const sel = document.getElementById('SemId');
+    if (!sel) return null;
+    const urlSem = new URLSearchParams(location.search).get('semid');
+    const ids = [...sel.options].map(o => parseInt(o.value, 10)).filter(Number.isFinite);
+    return { sel, current: urlSem || sel.value, latest: String(Math.max(...ids)) };
+  }
+
   function injectMarksHighlighter() {
     if (!window.location.href.includes('Student/StudentMarks')) return;
+
+    // Only track changes for the latest semester. Older semesters would look "updated"
+    // against the current baseline and could overwrite it.
+    const semInfo = getMarksSemester();
+    if (semInfo && semInfo.current !== semInfo.latest) return;
 
       // Snapshot version check removed — was wiping baseline on every reload
 
@@ -1211,7 +1226,7 @@
                 // All courses acknowledged — now safe to commit the latest snapshot as new baseline
                 const freshSnap = scrapeSnapshot();
                 if (Object.keys(freshSnap).length > 0) {
-                  chrome.storage.local.set({ marks_snapshot: JSON.stringify(freshSnap), jf_seen_updates: [] });
+                  chrome.storage.local.set({ marks_snapshot: JSON.stringify(freshSnap), marks_snapshot_sem: semInfo ? semInfo.current : null, jf_seen_updates: [] });
                 }
               } else {
                 const banner = document.getElementById('jf-update-banner');
@@ -1250,17 +1265,27 @@
       const currentSnapshot = scrapeSnapshot();
       if (Object.keys(currentSnapshot).length === 0) return;
 
-      chrome.storage.local.get(['marks_snapshot', 'jf_seen_updates'], (res) => {
+      chrome.storage.local.get(['marks_snapshot', 'marks_snapshot_sem', 'jf_seen_updates', 'jf_pending_courses'], (res) => {
         const seen = res.jf_seen_updates || [];
+        const semNow = semInfo ? semInfo.current : null;
 
-        if (!res.marks_snapshot) {
+        let prevSnapshot = null;
+        try { prevSnapshot = res.marks_snapshot ? JSON.parse(res.marks_snapshot) : null; } catch (e) {}
+
+        // A baseline from another semester is meaningless, so start fresh instead of flagging everything.
+        // Older saves have no semester tag, so fall back to checking if any course matches.
+        const sameSem = res.marks_snapshot_sem
+          ? res.marks_snapshot_sem === semNow
+          : Object.keys(prevSnapshot || {}).some(t => t in currentSnapshot);
+
+        if (!prevSnapshot || !sameSem) {
           if (isFinalRun) {
-            chrome.storage.local.set({ marks_snapshot: JSON.stringify(currentSnapshot), jf_pending_courses: [] });
+            chrome.storage.local.set({ marks_snapshot: JSON.stringify(currentSnapshot), marks_snapshot_sem: semNow, jf_pending_courses: [], jf_seen_updates: [] });
+            if (prevSnapshot) setSidebarMarksRing(false);
           }
           return;
         }
 
-        const prevSnapshot = JSON.parse(res.marks_snapshot);
         const changed = []; // [ { title, pane, sections[] } ]
 
         for (const courseTitle in currentSnapshot) {
@@ -1304,7 +1329,7 @@
           // This prevents a fresh page load from wiping a pending diff before the user sees it.
           const pendingFromStorage = res.jf_pending_courses || [];
           if (changed.length === 0 && pendingFromStorage.length === 0) {
-            chrome.storage.local.set({ marks_snapshot: JSON.stringify(currentSnapshot) });
+            chrome.storage.local.set({ marks_snapshot: JSON.stringify(currentSnapshot), marks_snapshot_sem: semNow });
           }
         }
       });
@@ -1316,12 +1341,99 @@
     setTimeout(() => runHighlighter(true),  5500);
   }
 
+
+  // ── OLDER SEMESTERS (beyond the ones in Flex's dropdown) ─────────────────
+  // Flex serves marks for ANY semester via /Student/StudentMarks?semid=YYYYT
+  // (T: 1 = Spring, 2 = Summer, 3 = Fall) even when it's missing from the dropdown.
+  const TERM_NAMES = { '1': 'Spring', '2': 'Summer', '3': 'Fall' };
+  const semLabel = (id) => `${TERM_NAMES[String(id).slice(4)] || 'Term'} ${String(id).slice(0, 4)}`;
+
+  async function scanOlderSemesters(oldestInDropdown) {
+    let year = parseInt(String(oldestInDropdown).slice(0, 4), 10);
+    let term = parseInt(String(oldestInDropdown).slice(4), 10);
+    const step = () => { term--; if (term < 1) { term = 3; year--; } };
+    const found = [];
+    let emptyRun = 0;
+    step();
+    // Stop after 6 empty terms in a row (about 2 years with no data)
+    while (emptyRun < 6 && year >= 2015) {
+      const id = `${year}${term}`;
+      try {
+        const html = await fetch(`/Student/StudentMarks?semid=${id}`, { credentials: 'include' }).then(r => r.text());
+        const doc = new DOMParser().parseFromString(html, 'text/html');
+        const courses = [...doc.querySelectorAll('.nav-tabs a')].map(a => a.textContent.trim()).filter(Boolean);
+        if (courses.length) { found.push({ id, label: semLabel(id), courses }); emptyRun = 0; }
+        else emptyRun++;
+      } catch (e) { return null; } // network problem: don't cache a half result
+      step();
+    }
+    return found;
+  }
+
+  function injectOlderSemesters() {
+    if (!window.location.href.includes('Student/StudentMarks')) return;
+    let tries = 0;
+    const start = () => {
+      const info = getMarksSemester();
+      if (!info) { if (++tries < 20) setTimeout(start, 300); return; }
+      if (document.getElementById('jf-old-sem')) return;
+      const { sel, current } = info;
+
+      // Semesters Flex really lists (before we add anything), used to find where "older" starts
+      const oldestInDropdown = String(Math.min(...[...sel.options].map(o => parseInt(o.value, 10)).filter(Number.isFinite)));
+
+      // 1. Make the dropdown tell the truth about what's on screen
+      if (![...sel.options].some(o => o.value === current)) {
+        const opt = document.createElement('option');
+        opt.value = current;
+        opt.textContent = `${semLabel(current)} (older)`;
+        sel.appendChild(opt);
+      }
+      sel.value = current; // programmatic change does not trigger Flex's auto-submit
+
+      // 2. Extra dropdown for semesters Flex doesn't list
+      const old = document.createElement('select');
+      old.id = 'jf-old-sem';
+      old.className = sel.className;
+      old.style.cssText = 'margin-left:10px;display:none;';
+      old.title = 'Semesters not listed in the Flex dropdown';
+      old.addEventListener('change', () => {
+        if (old.value) location.href = `/Student/StudentMarks?semid=${old.value}`;
+      });
+      sel.insertAdjacentElement('afterend', old);
+
+      const fill = (list) => {
+        old.innerHTML = '<option value="">Older semesters…</option>' +
+          list.map(x => `<option value="${x.id}" title="${x.courses.join(', ')}">${x.label}</option>`).join('');
+        if (list.some(x => x.id === current)) old.value = current;
+        old.style.display = list.length ? '' : 'none';
+      };
+
+      const CACHE_MS = 7 * 24 * 3600 * 1000;
+      chrome.storage.local.get(['jf_old_semesters'], async (res) => {
+        const c = res.jf_old_semesters;
+        if (c && c.oldest === oldestInDropdown && Date.now() - c.at < CACHE_MS) { fill(c.list); return; }
+        const list = await scanOlderSemesters(oldestInDropdown);
+        if (list) {
+          chrome.storage.local.set({ jf_old_semesters: { oldest: oldestInDropdown, at: Date.now(), list } });
+          fill(list);
+        }
+      });
+    };
+    start();
+  }
+
   // Kick off marks highlighter on marks pages
   if (window.location.href.includes('Student/StudentMarks')) {
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', () => setTimeout(injectMarksHighlighter, 400));
     } else {
       setTimeout(injectMarksHighlighter, 400);
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', injectOlderSemesters);
+    } else {
+      injectOlderSemesters();
     }
   }
 })();
