@@ -191,7 +191,7 @@ Flex Prime runs entirely in your browser.
 
 ## 🚀 Installation
 
-1. **Download the ZIP** — Download the latest FlexPrime `.zip` file. Keep it as a zip for now.
+1. **Download the ZIP** — Open the [latest release](https://github.com/rauf17/flex-prime/releases/latest) and download `FlexPrime-x.y.zip` (it contains only the extension files). GitHub's green **Code → Download ZIP** button also works.
 2. **Open Chrome Extensions** — Navigate to `chrome://extensions` in Google Chrome (or `edge://extensions` for Edge).
 3. **Enable Developer Mode** — Toggle on "Developer mode" in the top-right corner of the Extensions page.
 4. **Extract the ZIP** — Extract the FlexPrime `.zip` to any folder. You should see `manifest.json`, `background.js`, `content.js`, `snapshot.js`, `injected.js`, `marks-extras.js`, `transcript-extras.js`, `summary.html`, `summary.js`, `offscreen.html`, `offscreen.js`, `popup.html`, `popup.js`, `favicon.png` and `LICENSE`.

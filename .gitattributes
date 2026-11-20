@@ -1,0 +1,10 @@
+# GitHub's "Download ZIP" honours export-ignore, so the download contains only what the extension needs.
+# These files stay in the repository; they are just left out of downloaded archives.
+/.github export-ignore
+/tests export-ignore
+/scripts export-ignore
+/screenshots export-ignore
+/FlexPrime_Features.pdf export-ignore
+/package.json export-ignore
+/.gitignore export-ignore
+/.gitattributes export-ignore
