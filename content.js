@@ -1172,53 +1172,65 @@
       coursePane.querySelectorAll('.jf-card-updated').forEach(el => el.classList.remove('jf-card-updated'));
     }
 
+    // Courses the user has already looked at during this page load
+    const ackedThisPage = new Set();
+
+    function isPaneShown(pane) {
+      return !!pane && (pane.classList.contains('active') || pane.classList.contains('show'));
+    }
+
     function highlightCourse(tabLink, courseTitle, coursePane, changedSections) {
-      if (!tabLink) return;
+      if (!tabLink || tabLink.dataset.jfBound === '1') return;
+      tabLink.dataset.jfBound = '1';
       tabLink.classList.add('jf-updated-tab');
 
-      // If this is already the active pane, inject section pills immediately
-      if (coursePane && (coursePane.classList.contains('active') || coursePane.classList.contains('show'))) {
-        highlightSections(coursePane, changedSections);
-      }
-
-      // First click: show section pills (pane now active), start acknowledgement timer
-      tabLink.addEventListener('click', () => {
-        // Wait for Bootstrap to switch the pane before injecting pills
-        setTimeout(() => highlightSections(coursePane, changedSections), 120);
-
-        // Second click (or after 8s of viewing): treat as acknowledged — clear everything
-        const acknowledge = () => {
-          tabLink.classList.remove('jf-updated-tab');
-          clearSectionHighlights(coursePane);
-          chrome.storage.local.get(['jf_seen_updates', 'jf_pending_courses'], (r) => {
-            const seen = r.jf_seen_updates || [];
-            if (!seen.includes(courseTitle)) seen.push(courseTitle);
-            const pending = (r.jf_pending_courses || []).filter(c => c !== courseTitle);
-            chrome.storage.local.set({ jf_seen_updates: seen, jf_pending_courses: pending }, () => {
-              if (pending.length === 0) {
-                document.getElementById('jf-update-banner')?.remove();
-                setSidebarMarksRing(false);
-                // All courses acknowledged — now safe to commit the latest snapshot as new baseline
-                const freshSnap = scrapeSnapshot();
-                if (Object.keys(freshSnap).length > 0) {
-                  chrome.storage.local.set({ marks_snapshot: JSON.stringify(freshSnap), marks_snapshot_sem: semInfo ? semInfo.current : null, jf_seen_updates: [] });
-                }
-              } else {
-                const banner = document.getElementById('jf-update-banner');
-                if (banner) {
-                  const span = banner.querySelector('span');
-                  if (span) span.innerHTML = `Marks updated in <strong>${pending.length} course${pending.length > 1 ? 's' : ''}</strong>: ${pending.join(', ')}`;
-                }
+      // "Opened" means the course pane was actually on screen for a moment, whether it was the
+      // default tab or one the user clicked. Then the highlight is cleared for good.
+      const acknowledge = () => {
+        if (ackedThisPage.has(courseTitle)) return;
+        ackedThisPage.add(courseTitle);
+        tabLink.classList.remove('jf-updated-tab');
+        clearSectionHighlights(coursePane);
+        chrome.storage.local.get(['jf_seen_updates', 'jf_pending_courses'], (r) => {
+          const seen = r.jf_seen_updates || [];
+          if (!seen.includes(courseTitle)) seen.push(courseTitle);
+          const pending = (r.jf_pending_courses || []).filter(c => c !== courseTitle);
+          chrome.storage.local.set({ jf_seen_updates: seen, jf_pending_courses: pending }, () => {
+            if (pending.length === 0) {
+              document.getElementById('jf-update-banner')?.remove();
+              setSidebarMarksRing(false);
+              // Everything has been looked at, so the latest marks become the new baseline
+              const freshSnap = scrapeSnapshot();
+              if (Object.keys(freshSnap).length > 0) {
+                chrome.storage.local.set({ marks_snapshot: JSON.stringify(freshSnap), marks_snapshot_sem: semInfo ? semInfo.current : null, jf_seen_updates: [] });
               }
-            });
+            } else {
+              const banner = document.getElementById('jf-update-banner');
+              const span = banner && banner.querySelector('span');
+              if (span) span.innerHTML = `Marks updated in <strong>${pending.length} course${pending.length > 1 ? 's' : ''}</strong>: ${pending.join(', ')}`;
+            }
           });
-        };
+        });
+      };
 
-        // Auto-acknowledge after 6s of viewing, or on next click of this tab
-        const autoTimer = setTimeout(acknowledge, 6000);
-        tabLink.addEventListener('click', () => { clearTimeout(autoTimer); acknowledge(); }, { once: true });
+      let timer = null;
+      const startViewing = () => {
+        highlightSections(coursePane, changedSections);
+        if (timer || ackedThisPage.has(courseTitle)) return;
+        timer = setTimeout(acknowledge, 3000);
+      };
 
-      }, { once: true });
+      if (isPaneShown(coursePane)) startViewing();
+
+      // Clicking the tab shows its pane; wait for Bootstrap to switch, then start the viewing timer
+      tabLink.addEventListener('click', () => {
+        setTimeout(() => { if (isPaneShown(coursePane)) startViewing(); }, 150);
+      });
+
+      // Leaving the page while the course was on screen also counts as having seen it
+      window.addEventListener('pagehide', () => {
+        if (timer && isPaneShown(coursePane)) acknowledge();
+      });
     }
 
     function showBanner(changedCourses) {
@@ -1264,7 +1276,7 @@
         const changed = []; // [ { title, pane, sections[] } ]
 
         for (const courseTitle in currentSnapshot) {
-          if (seen.includes(courseTitle)) continue;
+          if (seen.includes(courseTitle) || ackedThisPage.has(courseTitle)) continue;
           const changedSecs = getChangedSections(prevSnapshot[courseTitle], currentSnapshot[courseTitle]);
           if (changedSecs.length > 0) {
             // Find course pane and tab link
