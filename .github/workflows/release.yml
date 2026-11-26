@@ -1,6 +1,6 @@
 name: Release
 
-# Runs when a version tag such as v2.5 is pushed: tests, builds the ZIP and attaches it to the GitHub Release.
+# Runs when a version tag such as v2.6 is pushed: tests, builds the ZIP and attaches it to the GitHub Release.
 on:
   push:
     tags: ['v*']

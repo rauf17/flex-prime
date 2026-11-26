@@ -6,7 +6,7 @@ Flex Prime is a browser extension built to make the FAST University FlexStudent 
   <img src="screenshots/popup.png" alt="Flex Prime popup: every tool, alert switch, theme and feedback option in one menu" width="340" />
 </p>
 
-> **Latest: version 2.5** (MIT licensed). Recent versions added a single-menu popup, older-semester marks, an all-semesters summary page, background alerts for marks, attendance and fees, a CGPA target planner, an update notifier and a "what's new" note after updates. See the [features](#-features) below.
+> **Latest: version 2.6** (MIT licensed). Recent versions added a single-menu popup, older-semester marks, an all-semesters summary page, background alerts for marks, attendance and fees, a CGPA target planner, an update notifier and a "what's new" note after updates. See the [features](#-features) below.
 
 ---
 
@@ -224,7 +224,7 @@ There is nothing to build: load the folder as an unpacked extension (see Install
 | `npm test` | Runs the unit tests (alerts, fee reminders, notification text, CGPA planner maths, packaging) |
 | `npm run package` | Builds `dist/FlexPrime-<version>.zip` containing only the files users need |
 
-GitHub Actions runs the checks on every push and pull request. Pushing a version tag such as `v2.5` builds the ZIP and attaches it to a GitHub Release.
+GitHub Actions runs the checks on every push and pull request. Pushing a version tag such as `v2.6` builds the ZIP and attaches it to a GitHub Release.
 
 **Code layout**
 

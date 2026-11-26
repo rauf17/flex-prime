@@ -418,7 +418,7 @@ document.getElementById('btn-summary').addEventListener('click', () => {
 
 // ── What's new (shown once after an update) ──────────────────────────────────
 const WHATS_NEW = {
-  '2.5': "What's new: all-semesters summary page, marks / attendance / fee alerts, CGPA target planner and this one-menu popup."
+  '2.6': "What's new: new-marks highlights now clear once you have opened the course."
 };
 (function () {
   const box = document.getElementById('whats-new');
